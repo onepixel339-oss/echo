@@ -43,9 +43,9 @@ catalogue source is keyless and public.
 | Area | Status |
 | --- | --- |
 | First-run onboarding (welcome → interests → seed taste → first map reveal) | ✅ skippable at every non-essential step |
-| Interest selection (anime / movies / series / games / books) | ✅ |
+| Interest selection (anime / manga / movies / series / games / books / comics) | ✅ |
 | Taste seeding: live catalogue search with ratings + favourites **or** quick preference cards | ✅ real results from AniList · Kitsu · TVMaze · IMDb · RAWG · Open Library |
-| Catalogue search & add — **real sources**, every result labelled with its source | ✅ AniList + Kitsu (anime) · TVMaze + IMDb (series) · IMDb + Cinemeta (movies) · RAWG (games, built-in key) · Open Library (books) |
+| **Category-aware search & add** — 8 category pills (All · Anime · Manga · Movies · TV · Games · Books · Comics) scope the query; results never mix types; every result carries year, community score, rating and source | ✅ AniList + Kitsu (anime & manga) · TVMaze + IMDb (series) · IMDb + Cinemeta (movies) · RAWG (games, built-in key) · Open Library (books & comics) |
 | Offline resilience: labelled sample catalogue fallback when the network is down | ✅ |
 | Manual title entry fallback — **auto-linked to the catalogue**: a confident match (same normalized title + compatible year + type) adopts the real record, so even manual entries get a real poster on the map; a manual "Attach real artwork" picker exists in the drawer | ✅ |
 | Library: statuses, 1–5 ratings, favourites, notes, user tags, search/sort/filter, bulk status, remove | ✅ |
@@ -53,7 +53,7 @@ catalogue source is keyless and public.
 | Edge explanations ("why are these two connected?") with real shared features | ✅ |
 | Details drawer: metadata, source attribution + canonical link, status/rating/favourite/note/tags, "why it connects to your taste", similar titles | ✅ |
 | Library ↔ sources: per-row source chip + external link, **Sync from sources** refreshes every title's metadata (posters, genres, synopsis) and links manual entries | ✅ |
-| Discover: **live candidate pools** (AniList genre queries + Kitsu genre/trending + Cinemeta genre & top-rated catalogues + RAWG genre/tag pools + Open Library subject shelves & weekly trending) → 4 shelves (Made for your taste / Because you liked X / A different direction / Explore this island), familiar↔surprising dial, media-type-balanced shelves, every card explains itself, feedback actions | ✅ |
+| Discover — **two layers, whole catalogue**: (1) curated sections from day one, no ratings needed — All-time favourites · Iconic classics · Popular now · Critically acclaimed · Hidden gems, built from real charts (AniList popularity/scores, IMDb top lists, RAWG most-added & Metacritic, Open Library most-read shelves), globally deduped so nothing repeats; (2) personal explainable shelves (Made for your taste / Because you liked X / A different direction / Explore this island / Explore something new) with familiar↔surprising dial; plus an "explore a genre" chip row that pulls live genre pools across your types | ✅ |
 | Taste DNA: confidence tiers, insight cards with sample counts, feature bars, rating distribution, most-influential titles | ✅ |
 | Taste identity card — a shareable card distilled from your taste fingerprint | ✅ |
 | Ask ECHO — conversational search across every medium (intent routing → real catalogue results → grounded narration), plus library & AI-knowledge answers | ✅ |
@@ -79,12 +79,12 @@ legend. No glassmorphism, no gradients, no glow, no runtime CDN fetches.
 
 | Source | Serves | Notes |
 | --- | --- | --- |
-| [AniList](https://anilist.co/) | Anime | Public GraphQL API; genres, community tags, studios, artwork |
-| [Kitsu](https://kitsu.app/) | Anime | Public JSON:API; categories, artwork, trending pools |
+| [AniList](https://anilist.co/) | Anime **and manga** | Public GraphQL API; genres, community tags, studios, artwork, popularity & score rankings |
+| [Kitsu](https://kitsu.app/) | Anime **and manga** (light novels excluded) | Public JSON:API; categories, artwork, trending pools |
 | [TVMaze](https://www.tvmaze.com/) | Series | Free public API; genres, ratings, artwork |
-| IMDb suggestions + [Cinemeta](https://github.com/Stremio/) | Movies **and series** (+ genre/top-rated pools) | Public endpoints; genres, cast, director, artwork via metahub |
-| [RAWG](https://rawg.io/) | Games (+ genre/tag pools) | Free API with a **built-in project key** — games work with zero setup |
-| [Open Library](https://openlibrary.org/) | Books (+ subject shelves, weekly trending) | Internet Archive's open catalogue; keyless, CORS-enabled |
+| IMDb suggestions + [Cinemeta](https://github.com/Stremio/) | Movies **and series** (+ genre/top-rated pools and deep top lists for era filtering) | Public endpoints; genres, cast, director, artwork via metahub |
+| [RAWG](https://rawg.io/) | Games (+ genre/tag pools, era windows, Metacritic rankings) | Free API with a **built-in project key** — games work with zero setup |
+| [Open Library](https://openlibrary.org/) | Books **and comics** (graphic-novel canon, era windows, weekly trending) | Internet Archive's open catalogue; keyless, CORS-enabled |
 
 Every search result carries a source chip; every title's drawer links back to
 its canonical page; Settings → Data sources lists all of them. When you're
@@ -224,6 +224,15 @@ naming, layout determinism and layout stability on additions (≤ 60px drift).
 - Import/export covers library, feedback and non-secret settings; provider
   artwork URLs are excluded by design.
 - The map is optimised for personal libraries (up to a few hundred titles).
+- Comic coverage comes from Open Library's graphic-novel subjects: major
+  graphic novels are well covered, but current monthly floppy issues and some
+  publisher back-catalogues are spotty.
+- Books and comics have no rating source, so they appear in the All-time /
+  Classics / Popular sections (via most-read and edition-count charts) but not
+  in Critically acclaimed; movies and series have no keyless "trending now"
+  source, so they live in All-time / Classics / Acclaimed instead of Popular.
+- Open Library's subject taxonomy is messy: the adapters filter cataloguing
+  noise and multi-volume duplicates, but occasional oddities still surface.
 
 ## Privacy summary
 

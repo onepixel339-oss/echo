@@ -244,7 +244,13 @@ async function classify(
         const mediaTypes: MediaType[] = Array.isArray(parsed.mediaTypes)
           ? (parsed.mediaTypes as unknown[]).filter(
               (t): t is MediaType =>
-                t === "anime" || t === "movie" || t === "series" || t === "game" || t === "book",
+                t === "anime" ||
+                  t === "manga" ||
+                  t === "movie" ||
+                  t === "series" ||
+                  t === "game" ||
+                  t === "book" ||
+                  t === "comic",
             )
           : [];
         return { intent, searchQuery: searchQuery ?? "", referenceTitle, mediaTypes };
@@ -316,7 +322,15 @@ export async function POST(req: NextRequest) {
     if (cls.intent === "search" && (cls.searchQuery || cls.referenceTitle)) {
       const mediaTypes = cls.mediaTypes.length
         ? cls.mediaTypes
-        : (["anime", "movie", "series", "game", "book"] as MediaType[]);
+        : ([
+                  "anime",
+                  "manga",
+                  "movie",
+                  "series",
+                  "game",
+                  "book",
+                  "comic",
+                ] as MediaType[]);
 
       // 1) in parallel: the user's essence query + the reference title search
       const [essence, refSearch] = await Promise.all([

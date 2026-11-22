@@ -24,6 +24,7 @@ import { buildSimilarityGraph } from "@/lib/echo/engine/similarity";
 import { computeClusters } from "@/lib/echo/engine/cluster";
 import { computeLayout } from "@/lib/echo/engine/layout";
 import type { MediaItem, MediaType, Rating } from "@/lib/echo/types";
+import { MEDIA_TYPES } from "@/lib/echo/types";
 
 type Step = "welcome" | "interests" | "seed" | "reveal";
 
@@ -58,10 +59,12 @@ const PACING_CARDS: { id: string; tags: string[] }[] = [
 /** Suggested starting queries per interest — real searches, curated prompts. */
 const SEED_SUGGESTIONS: Record<MediaType, string[]> = {
   anime: ["Fullmetal Alchemist", "Death Note", "Frieren", "Monster"],
+  manga: ["Berserk", "One Piece", "Vagabond", "Vinland Saga"],
   movie: ["Inception", "Parasite", "The Dark Knight", "Spirited Away"],
   series: ["Breaking Bad", "Severance", "The Office", "Chernobyl"],
   game: ["The Witcher 3", "Elden Ring", "Zelda: Breath of the Wild", "Hades"],
   book: ["Nineteen Eighty-Four", "The Little Prince", "Dune", "Crime and Punishment"],
+  comic: ["Watchmen", "Maus", "The Dark Knight Returns", "Persepolis"],
 };
 
 export function OnboardingFlow() {
@@ -69,10 +72,12 @@ export function OnboardingFlow() {
   const [step, setStep] = React.useState<Step>("welcome");
   const [interests, setInterests] = React.useState<MediaType[]>([
     "anime",
+    "manga",
     "movie",
     "series",
     "game",
     "book",
+    "comic",
   ]);
   const [seedPath, setSeedPath] = React.useState<"a" | "b" | null>(null);
 
@@ -166,8 +171,8 @@ export function OnboardingFlow() {
               <h1 className="echo-display text-2xl font-semibold">{t("onb.interests.title")}</h1>
               <p className="mt-1 text-sm text-muted-foreground">{t("onb.interests.sub")}</p>
             </header>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5" role="group">
-              {(["anime", "movie", "series", "game", "book"] as const).map((mt) => {
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-7" role="group">
+              {MEDIA_TYPES.map((mt) => {
                 const active = interests.includes(mt);
                 return (
                   <button

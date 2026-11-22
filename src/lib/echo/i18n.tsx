@@ -361,7 +361,7 @@ const EN: Dict = {
   "link.searchPlaceholder": "Search the catalogues…",
   "link.searching": "Searching…",
   "link.none": "No confident match found. Try another spelling or the original title.",
-  "link.confirm": "Use this",",
+  "link.confirm": "Use this",
 
   // ---- taste
   "taste.title": "Taste DNA",
@@ -538,7 +538,7 @@ const AR: Dict = {
   "app.all": "الكل",
   "app.none": "لا شيء",
   "app.of": "من",
-  "app.more": "المزيد",",
+  "app.more": "المزيد",
 
   // ---- taste companion (AI)
   "companion.title": "رفيق الذوق",
@@ -614,7 +614,7 @@ const AR: Dict = {
   "contentRating.unknown": "التصنيف العمري غير متاح",
   "meta.episodes": "{n} حلقة",
   "meta.minutes": "{n} دقيقة",
-  "meta.hours": "≈{n} ساعة لعب",",
+  "meta.hours": "≈{n} ساعة لعب",
 
   "demo.badge": "خريطة نموذجية",
   "demo.banner": "أنت تستكشف الخريطة النموذجية. لا شيء هنا يلمس مكتبتك الحقيقية.",

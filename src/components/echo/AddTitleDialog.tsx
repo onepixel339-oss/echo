@@ -1,7 +1,10 @@
 /**
- * ECHO — Add title dialog: live multi-source catalogue search (AniList,
- * TVMaze, IMDb) with per-result source chips and a manual fallback.
- * Offline: falls back to the labelled sample catalogue automatically.
+ * ECHO — Add title dialog: category-aware, live multi-source catalogue
+ * search with per-result source chips and a manual fallback.
+ *
+ * A row of category pills (All · Anime · Manga · Movies · TV · Games ·
+ * Books · Comics) scopes the search: results never mix unrelated media
+ * types. Offline: falls back to the labelled sample catalogue automatically.
  */
 
 "use client";
@@ -17,11 +20,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, Check, PenLine, Loader2 } from "lucide-react";
+import { Search, Plus, Check, PenLine, Loader2, Layers, Star } from "lucide-react";
 import { useI18n } from "@/lib/echo/i18n";
 import { useEchoStore } from "@/lib/echo/store";
 import { searchCatalogue, type CatalogueSearchOutcome } from "@/lib/echo/providers";
 import type { MediaItem, MediaType } from "@/lib/echo/types";
+import { MEDIA_TYPES } from "@/lib/echo/types";
 import { MediaTypeIcon, PosterTile } from "./bits";
 import { useToast } from "@/hooks/use-toast";
 import { makeId } from "@/lib/echo/ids";
@@ -30,8 +34,10 @@ import { cn } from "@/lib/utils";
 export function providerChipLabel(provider: string): string {
   switch (provider) {
     case "anilist":
+    case "anilist-m":
       return "AniList";
     case "kitsu":
+    case "kitsu-m":
       return "Kitsu";
     case "tvmaze":
       return "TVMaze";
@@ -51,6 +57,25 @@ export function providerChipLabel(provider: string): string {
   }
 }
 
+/** Search categories: "all" + every media type, each with its own pill. */
+export type SearchCategory = "all" | MediaType;
+
+const CATEGORY_TYPES: { id: SearchCategory; mediaKey: string }[] = [
+  { id: "all", mediaKey: "add.cat.all" },
+  { id: "anime", mediaKey: "add.cat.anime" },
+  { id: "manga", mediaKey: "add.cat.manga" },
+  { id: "movie", mediaKey: "add.cat.movies" },
+  { id: "series", mediaKey: "add.cat.tv" },
+  { id: "game", mediaKey: "add.cat.games" },
+  { id: "book", mediaKey: "add.cat.books" },
+  { id: "comic", mediaKey: "add.cat.comics" },
+];
+
+/** The i18n key that names a search category. */
+export function searchCategoryKey(cat: SearchCategory): string {
+  return CATEGORY_TYPES.find((c) => c.id === cat)?.mediaKey ?? "add.cat.all";
+}
+
 export function AddTitleDialog() {
   const { t, tv, lang } = useI18n();
   const { toast } = useToast();
@@ -61,6 +86,7 @@ export function AddTitleDialog() {
   const entries = useEchoStore((s) => s.entries);
 
   const [query, setQuery] = React.useState("");
+  const [category, setCategory] = React.useState<SearchCategory>("all");
   const [results, setResults] = React.useState<CatalogueSearchOutcome | null>(null);
   const [searching, setSearching] = React.useState(false);
   const [searched, setSearched] = React.useState(false);
@@ -70,7 +96,7 @@ export function AddTitleDialog() {
   const libraryIds = React.useMemo(() => new Set(entries.map((e) => e.mediaLocalId)), [entries]);
 
   const runSearch = React.useCallback(
-    async (q: string) => {
+    async (q: string, cat: SearchCategory) => {
       if (!q.trim()) {
         setResults(null);
         setSearched(false);
@@ -78,9 +104,15 @@ export function AddTitleDialog() {
       }
       setSearching(true);
       try {
+        const mediaTypes =
+          cat === "all"
+            ? interests.length
+              ? interests
+              : undefined
+            : [cat as MediaType];
         const res = await searchCatalogue(q, {
-          mediaTypes: interests.length ? interests : undefined,
-          limit: 8,
+          mediaTypes,
+          limit: cat === "all" ? 8 : 12,
         });
         setResults(res);
         setSearched(true);
@@ -97,7 +129,12 @@ export function AddTitleDialog() {
   const onQueryChange = (v: string) => {
     setQuery(v);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => void runSearch(v), 350);
+    debounceRef.current = setTimeout(() => void runSearch(v, category), 350);
+  };
+
+  const onCategoryChange = (cat: SearchCategory) => {
+    setCategory(cat);
+    if (query.trim()) void runSearch(query, cat); // cache makes this instant
   };
 
   const closeDialog = () => {
@@ -109,6 +146,7 @@ export function AddTitleDialog() {
   };
 
   const items = results?.results ?? [];
+  const scopedCategory = category !== "all" ? t(searchCategoryKey(category)) : "";
 
   return (
     <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : closeDialog())}>
@@ -135,20 +173,72 @@ export function AddTitleDialog() {
               )}
             </div>
 
+            {/* category pills — scope the search to one medium */}
+            <div
+              className="echo-scroll -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1"
+              role="tablist"
+              aria-label={t("add.categories")}
+            >
+              {CATEGORY_TYPES.map(({ id, mediaKey }) => {
+                const active = category === id;
+                return (
+                  <button
+                    key={id}
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => onCategoryChange(id)}
+                    className={cn(
+                      "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                      active
+                        ? "border-echo-accent/60 bg-echo-accent/10 text-foreground"
+                        : "border-border text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {id === "all" ? (
+                      <Layers className="h-3.5 w-3.5" aria-hidden />
+                    ) : (
+                      <MediaTypeIcon type={id as MediaType} className="h-3.5 w-3.5" aria-hidden />
+                    )}
+                    {t(mediaKey)}
+                  </button>
+                );
+              })}
+            </div>
+            {category !== "all" && (
+              <p className="text-[11px] text-muted-foreground/80" aria-live="polite">
+                {t("add.scopedHint", { category: scopedCategory })}
+              </p>
+            )}
+
             {results?.usedFallback && (
               <p className="text-[11px] text-echo-gold">{t("add.fallbackNotice")}</p>
             )}
             {searched && !searching && items.length === 0 && query.trim() && !results?.usedFallback && (
-              <p className="rounded-lg border border-dashed border-border px-3 py-2 text-center text-xs text-muted-foreground">
-                {t("add.noResults", { q: query })}
-                <br />
-                {t("add.noResults.sub")}
-              </p>
+              <div className="rounded-lg border border-dashed border-border px-3 py-2 text-center text-xs text-muted-foreground">
+                <p>
+                  {category !== "all"
+                    ? t("add.noResultsCat", { q: query, category: scopedCategory })
+                    : t("add.noResults", { q: query })}
+                </p>
+                <p>{t("add.noResults.sub")}</p>
+                {category !== "all" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-1.5 h-7 text-xs"
+                    onClick={() => onCategoryChange("all")}
+                  >
+                    {t("add.tryAll")}
+                  </Button>
+                )}
+              </div>
             )}
 
             <ul className="flex flex-col gap-1.5" aria-live="polite">
               {items.map(({ item, sourceLabel }) => {
                 const inLibrary = libraryIds.has(item.localId);
+                const author = item.creators?.[0];
+                const isReading = item.mediaType === "book" || item.mediaType === "manga" || item.mediaType === "comic";
                 return (
                   <li key={item.localId}>
                     <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-2 transition hover:border-echo-accent/40">
@@ -161,13 +251,22 @@ export function AddTitleDialog() {
                           <MediaTypeIcon type={item.mediaType} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                           <span className="echo-chip shrink-0">{sourceLabel}</span>
                         </p>
-                        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                          {[item.releaseYear, t(`media.${item.mediaType}`), item.contentRating]
-                            .filter(Boolean)
-                            .join(" · ")}
+                        <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+                          {item.releaseYear ?? "—"}
+                          {item.publicScore ? (
+                            <>
+                              <span aria-hidden>·</span>
+                              <Star className="h-3 w-3 fill-echo-warning text-echo-warning" aria-hidden />
+                              {item.publicScore.toFixed(1)}
+                            </>
+                          ) : null}
+                          {item.contentRating ? ` · ${item.contentRating}` : ""}
+                          {` · ${t(`media.${item.mediaType}`)}`}
                         </p>
                         <p className="mt-0.5 truncate text-[11px] text-muted-foreground/80">
-                          {item.genres.slice(0, 3).map((g) => tv(g)).join(" · ")}
+                          {isReading && author
+                            ? `${t("add.moreBySource", { source: author })} · ${item.genres.slice(0, 2).map((g) => tv(g)).join(" · ")}`
+                            : item.genres.slice(0, 3).map((g) => tv(g)).join(" · ")}
                         </p>
                       </div>
                       <Button
@@ -262,9 +361,16 @@ function ManualEntryForm({
       provider: "manual",
       providerId: name,
       mediaType: type,
-      format: type === "movie" ? "film" : type === "game" ? "game" : type === "book" ? "book" : "series",
+      format:
+        type === "movie"
+          ? "film"
+          : type === "game"
+            ? "game"
+            : type === "book" || type === "manga" || type === "comic"
+              ? "book"
+              : "series",
       title: name,
-      releaseYear: y >= 1900 && y <= 2100 ? y : undefined,
+      releaseYear: y >= 1400 && y <= 2100 ? y : undefined,
       genres: genres
         .split(",")
         .map((g) => g.trim().toLowerCase().replace(/\s+/g, "-"))
@@ -298,8 +404,8 @@ function ManualEntryForm({
           <label htmlFor="m-type" className="text-xs font-medium text-muted-foreground">
             {t("manual.type")} *
           </label>
-          <div className="mt-1 grid grid-cols-3 gap-1.5" role="radiogroup" aria-label={t("manual.type")}>
-            {(["anime", "movie", "series", "game", "book"] as const).map((mt) => (
+          <div className="mt-1 grid grid-cols-3 gap-1.5 sm:grid-cols-4" role="radiogroup" aria-label={t("manual.type")}>
+            {MEDIA_TYPES.map((mt) => (
               <button
                 key={mt}
                 type="button"

@@ -111,9 +111,16 @@ export function TasteScreen() {
     [weeklyBusy, mediaById, entries, feedback, settings.recencyWeight, lang],
   );
 
-  // auto-load: a cached same-week digest returns with ZERO network calls
+  // auto-load: a cached same-week digest returns with ZERO network calls.
+  // The ref guard makes the auto-run fire ONCE per mount — without it, the
+  // busy-state flip gives runWeekly a new identity, the effect re-runs, and a
+  // failing endpoint (e.g. AI unavailable on a keyless deploy) would be
+  // re-fetched in an infinite ~4 req/s loop that also saturates the shared
+  // rate limits. Manual retry stays available via the button.
+  const weeklyAutoTried = React.useRef(false);
   React.useEffect(() => {
-    if (!canWeekly) return;
+    if (!canWeekly || weeklyAutoTried.current) return;
+    weeklyAutoTried.current = true;
     void runWeekly(false);
   }, [canWeekly, runWeekly]);
 

@@ -25,6 +25,7 @@ import { computeClusters } from "@/lib/echo/engine/cluster";
 import { computeLayout } from "@/lib/echo/engine/layout";
 import { DEMO_CATALOGUE, demoToMediaItem } from "@/lib/echo/data/demoCatalogue";
 import type { MediaItem, UserMediaEntry } from "@/lib/echo/types";
+import { MEDIA_TYPES } from "@/lib/echo/types";
 import { MapCanvas, type MapFilters } from "../MapCanvas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -248,7 +249,7 @@ export function MapScreen() {
           role="group"
           aria-label={t("map.filter.type")}
         >
-          {(["anime", "movie", "series", "game", "book"] as const).map((type) => (
+          {MEDIA_TYPES.map((type) => (
             <Toggle
               key={type}
               size="sm"

@@ -5,12 +5,12 @@ without a row here, a reviewer and a date.**
 
 | Provider | Status | Decision |
 | --- | --- | --- |
-| AniList (graphql.anilist.co) | **Active** — anime search, metadata, artwork, genre pools | **Approved** for ECHO — free public GraphQL API, no key, no scraping; per-title attribution + canonical link on every result |
-| Kitsu (kitsu.io JSON:API) | **Active** — anime search, trending, category pools, artwork | **Approved** for ECHO — free public JSON:API, no key; per-title attribution + canonical link on every result |
+| AniList (graphql.anilist.co) | **Active** — anime **and manga** search, metadata, artwork, genre pools, popularity/score rankings for Discover | **Approved** for ECHO — free public GraphQL API, no key, no scraping; per-title attribution + canonical link on every result |
+| Kitsu (kitsu.io JSON:API) | **Active** — anime **and manga** search, trending, category pools, artwork | **Approved** for ECHO — free public JSON:API, no key; per-title attribution + canonical link on every result |
 | TVMaze (api.tvmaze.com) | **Active** — series search, metadata, artwork | **Approved** for ECHO — free public API, no key; attribution requested and provided (details drawer + Settings → Data sources) |
-| IMDb suggestion endpoint + Cinemeta (v3-cinemeta.strem.io) | **Active** — movie **and series** search, metadata, artwork, genre + top-rated catalogues | **Approved** for ECHO — public endpoints, no key; attributed as "Data from IMDb via Cinemeta" |
+| IMDb suggestion endpoint + Cinemeta (v3-cinemeta.strem.io) | **Active** — movie **and series** search, metadata, artwork, genre + top-rated catalogues, deep top lists (era filtering) | **Approved** for ECHO — public endpoints, no key; attributed as "Data from IMDb via Cinemeta" |
 | RAWG (api.rawg.io) | **Active** — games search, metadata, artwork, genre/tag pools | **Approved** for ECHO — free API; a project key is built in so games are live out of the box, and users may add their own key in Settings for a private quota; per-title attribution + canonical link |
-| Open Library (openlibrary.org) | **Active** — books search, works metadata, covers, subject shelves, weekly trending | **Approved** for ECHO — free public API from the Internet Archive, no key, CORS-enabled; per-title attribution + canonical link on every result |
+| Open Library (openlibrary.org) | **Active** — books **and comics** search, works metadata, covers, subject shelves, graphic-novel canon & era windows, weekly trending | **Approved** for ECHO — free public API from the Internet Archive, no key, CORS-enabled; per-title attribution + canonical link on every result |
 | ECHO sample catalogue (local, offline) | Active as **offline fallback only** | **Approved** — original compilation, clearly labelled "Sample" whenever used |
 | TMDB | **Removed** | Superseded by the keyless stack above; the key gate and commercial-use caveats no longer apply |
 
