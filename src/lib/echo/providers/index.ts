@@ -4,11 +4,14 @@
  * Real sources by default (client-side, attributed):
  *   anime  → AniList  (graphql.anilist.co)
  *          → Kitsu    (kitsu.io JSON:API)
+ *   manga  → AniList  (type: MANGA)
+ *          → Kitsu    (/manga, light novels excluded)
  *   series → TVMaze   (api.tvmaze.com)
  *          → IMDb suggestions + Cinemeta details (v3-cinemeta.strem.io)
  *   movies → IMDb suggestions + Cinemeta details (v3-cinemeta.strem.io)
  *   games  → RAWG      (api.rawg.io — built-in key, live out of the box)
  *   books  → Open Library (openlibrary.org — keyless)
+ *   comics → Open Library (subject-scoped to graphic novels)
  *
  * The labelled demo catalogue is an OFFLINE FALLBACK only: it is used when
  * the network is unavailable so the app stays functional, and every result
@@ -18,14 +21,17 @@
 import { DemoProvider } from "./demo";
 import { AniListProvider } from "./anilist";
 import { TvMazeProvider } from "./tvmaze";
-import { ImdbProvider, ImdbSeriesProvider, cinemetaCatalog, cinemetaTop } from "./imdb";
+import { ImdbProvider, ImdbSeriesProvider, cinemetaCatalog, cinemetaTop, cinemetaTopDeep } from "./imdb";
 import { KitsuProvider } from "./kitsu";
-import { RawgProvider, rawgByGenre, rawgTop, rawgUpcoming, rawgKeyConfigured } from "./rawg";
+import { RawgProvider, rawgByGenre, rawgTop, rawgUpcoming, rawgClassics, rawgTopRated, rawgIndieGems, rawgRecentPopular, rawgKeyConfigured } from "./rawg";
 import {
   OpenLibraryProvider,
   openLibrarySubject,
   openLibraryTrending,
   openLibraryArabicShelf,
+  openLibraryComicShelf,
+  openLibraryComicClassics,
+  openLibraryBookClassics,
 } from "./openlibrary";
 import type { CatalogueProvider, ProviderSearchResult, SearchFilters } from "./types";
 import { genreDisplay } from "./types";
@@ -44,6 +50,16 @@ export const openLibraryProvider = new OpenLibraryProvider();
 
 // re-exported for status display (the key itself is built in — no user wiring)
 export { rawgKeyConfigured };
+
+export const ALL_MEDIA_TYPES: MediaType[] = [
+  "anime",
+  "manga",
+  "movie",
+  "series",
+  "game",
+  "book",
+  "comic",
+];
 
 export interface CatalogueSearchOutcome {
   results: ProviderSearchResult[];
@@ -70,7 +86,7 @@ export async function searchCatalogue(
   filters?: SearchFilters,
 ): Promise<CatalogueSearchOutcome> {
   const q = query.trim();
-  const types = filters?.mediaTypes ?? ["anime", "movie", "series", "game", "book"];
+  const types = filters?.mediaTypes ?? ALL_MEDIA_TYPES;
   const limit = filters?.limit ?? 8;
   if (!q) return { results: [], sources: [], usedFallback: false, failed: [] };
   const key = `${q}|${[...types].sort().join(",")}|${limit}`;
@@ -93,6 +109,10 @@ async function runCatalogueSearch(
     jobs.push({ provider: anilistProvider, run: () => anilistProvider.search(q, { limit }) });
     jobs.push({ provider: kitsuProvider, run: () => kitsuProvider.search(q, { limit }) });
   }
+  if (types.includes("manga")) {
+    jobs.push({ provider: anilistProvider, run: () => anilistProvider.searchManga(q, { limit }) });
+    jobs.push({ provider: kitsuProvider, run: () => kitsuProvider.searchManga(q, { limit }) });
+  }
   if (types.includes("movie")) {
     jobs.push({ provider: imdbProvider, run: () => imdbProvider.search(q, { limit }) });
   }
@@ -103,8 +123,8 @@ async function runCatalogueSearch(
   if (types.includes("game") && rawgProvider.isConfigured()) {
     jobs.push({ provider: rawgProvider, run: () => rawgProvider.search(q, { limit }) });
   }
-  if (types.includes("book")) {
-    jobs.push({ provider: openLibraryProvider, run: () => openLibraryProvider.search(q, { limit }) });
+  if (types.includes("book") || types.includes("comic")) {
+    jobs.push({ provider: openLibraryProvider, run: () => openLibraryProvider.search(q, { mediaTypes: types, limit }) });
   }
 
   const settled = await Promise.allSettled(jobs.map((j) => j.run()));
@@ -183,8 +203,12 @@ export async function getTitleByLocalId(localId: string): Promise<MediaItem | nu
     switch (prefix) {
       case "anilist":
         return await anilistProvider.getTitle(id);
+      case "anilist-m":
+        return await anilistProvider.getTitleManga(id);
       case "kitsu":
         return await kitsuProvider.getTitle(id);
+      case "kitsu-m":
+        return await kitsuProvider.getTitleManga(id);
       case "tvmaze":
         return await tvmazeProvider.getTitle(id);
       case "imdb":
@@ -215,10 +239,12 @@ export interface CandidatePool {
  * Build a REAL candidate pool for Discover from the user's top genres —
  * now across every catalogue medium:
  *  - anime  → AniList genre-ranked, Kitsu genre-ranked, Kitsu trending
+ *  - manga  → AniList manga genre-ranked, Kitsu manga genre-ranked
  *  - movies → Cinemeta genre catalogues + Cinemeta all-time top
  *  - series → Cinemeta genre catalogues + Cinemeta all-time top
  *  - games  → RAWG genre/tag pools + RAWG most-added
  *  - books  → Open Library subject shelves + weekly trending
+ *  - comics → Open Library graphic-novel canon
  */
 export async function fetchCandidatePool(opts: {
   genres: string[]; // canonical slugs, best first
@@ -245,6 +271,16 @@ export async function fetchCandidatePool(opts: {
         .then((items) => ({ items, source: "Kitsu" })),
       kitsuProvider
         .trending(Math.ceil(limit / 2))
+        .then((items) => ({ items, source: "Kitsu" })),
+    );
+  }
+  if (opts.mediaTypes.includes("manga")) {
+    jobs.push(
+      anilistProvider
+        .mangaByGenres(genres, limit, opts.includeMature ?? false)
+        .then((items) => ({ items, source: "AniList" })),
+      kitsuProvider
+        .mangaByGenres(genres, limit, opts.includeMature ?? false)
         .then((items) => ({ items, source: "Kitsu" })),
     );
   }
@@ -279,11 +315,17 @@ export async function fetchCandidatePool(opts: {
   if (opts.mediaTypes.includes("game") && rawgProvider.isConfigured()) {
     jobs.push(rawgTop(limit, visibility).then((items) => ({ items, source: "RAWG" })));
   }
+  if (opts.mediaTypes.includes("manga")) {
+    jobs.push(anilistProvider.mangaTop(limit, opts.includeMature ?? false).then((items) => ({ items, source: "AniList" })));
+  }
   if (opts.mediaTypes.includes("book")) {
     jobs.push(openLibraryTrending(limit).then((items) => ({ items, source: "Open Library" })));
     if (opts.arabicShelf) {
       jobs.push(openLibraryArabicShelf(16).then((items) => ({ items, source: "Open Library" })));
     }
+  }
+  if (opts.mediaTypes.includes("comic")) {
+    jobs.push(openLibraryComicShelf(limit).then((items) => ({ items, source: "Open Library" })));
   }
 
   const settled = await Promise.allSettled(jobs.map((j) => j));
@@ -380,14 +422,14 @@ export function catalogueSources(): {
     {
       id: "anilist",
       label: "AniList",
-      serves: "Anime",
+      serves: "Anime & Manga",
       notice: anilistProvider.getAttribution().notice ?? "",
       canonical: "https://anilist.co/",
     },
     {
       id: "kitsu",
       label: "Kitsu",
-      serves: "Anime",
+      serves: "Anime & Manga",
       notice: kitsuProvider.getAttribution().notice ?? "",
       canonical: "https://kitsu.app/",
     },
@@ -415,11 +457,225 @@ export function catalogueSources(): {
     {
       id: "openlib",
       label: "Open Library",
-      serves: "Books",
+      serves: "Books & Comics",
       notice: openLibraryProvider.getAttribution().notice ?? "",
       canonical: "https://openlibrary.org/",
     },
   ];
+}
+
+/* ---------------- curated Discover sections ---------------- */
+
+export type DiscoverSectionId = "alltime" | "classics" | "popular" | "acclaimed" | "gems";
+
+export interface DiscoverSection {
+  id: DiscoverSectionId;
+  items: MediaItem[];
+}
+
+export interface DiscoverSectionsOutcome {
+  sections: DiscoverSection[];
+  sources: string[];
+  errors: string[];
+}
+
+function titleKey(item: MediaItem): string {
+  return `${item.title.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "")}|${item.releaseYear ?? ""}`;
+}
+
+/** Round-robin by media type so one kind of title never fills a section. */
+function mixByMediaType(batches: { type: MediaType; items: MediaItem[] }[], max: number): MediaItem[] {
+  const out: MediaItem[] = [];
+  let i = 0;
+  while (out.length < max) {
+    let pushed = false;
+    for (const b of batches) {
+      const item = b.items[i];
+      if (item && out.length < max) {
+        out.push(item);
+        pushed = true;
+      }
+    }
+    if (!pushed) break;
+    i++;
+  }
+  return out;
+}
+
+/**
+ * Curated, taste-free Discover sections built ONLY from real provider
+ * rankings (popularity, scores, era windows). They render for every user —
+ * fresh accounts included — so Discover represents the whole catalogue from
+ * day one. Every job is cached upstream and fails independently.
+ *
+ * Sources per section (all verified live):
+ *  - alltime  : AniList all-time popular anime/manga · IMDb top movies/series
+ *               · RAWG most-added · Open Library most-read classics &
+ *               graphic-novel canon
+ *  - classics : AniList popular pre-1995/2000 · IMDb top filtered to
+ *               pre-2000 · RAWG 1980–2005 · Open Library pre-1950 books and
+ *               pre-2000 graphic novels
+ *  - popular  : Kitsu trending anime/manga · RAWG most-added last 12 months
+ *               · Open Library weekly trending
+ *  - acclaimed: AniList top-scored anime/manga (80+) · RAWG Metacritic 85+
+ *  - gems     : AniList high-score/low-popularity anime/manga · RAWG
+ *               indie darlings (Metacritic 80+)
+ */
+export async function fetchDiscoverSections(opts: {
+  mediaTypes: MediaType[];
+  visibility?: ContentVisibility;
+  includeMature?: boolean;
+  /** canonical genre slugs the user has excluded */
+  excludedGenres?: string[];
+  /** localIds to skip (in library, rejected, or already shown) */
+  skipLocalIds?: Set<string>;
+  maxPerSection?: number;
+}): Promise<DiscoverSectionsOutcome> {
+  const types = new Set(opts.mediaTypes);
+  const includeMature = opts.includeMature ?? false;
+  const visibility = opts.visibility ?? (includeMature ? "all" : "moderate");
+  const maxPerSection = opts.maxPerSection ?? 14;
+  const limitPerType = Math.max(8, Math.ceil(maxPerSection * 1.6));
+
+  const jobs: Record<DiscoverSectionId, Promise<MediaItem[]>[]> = {
+    alltime: [],
+    classics: [],
+    popular: [],
+    acclaimed: [],
+    gems: [],
+  };
+  const sources = new Set<string>();
+  const errors: string[] = [];
+  const track = <T extends MediaItem>(label: string, p: Promise<T[]>): Promise<T[]> =>
+    p.then(
+      (items) => {
+        if (items.length) sources.add(label);
+        return items;
+      },
+      (err) => {
+        errors.push(`${label}: ${String((err as Error)?.message ?? err)}`);
+        return [] as T[];
+      },
+    );
+
+  // ---- all-time favourites
+  if (types.has("anime"))
+    jobs.alltime.push(track("AniList", anilistProvider.animeTop(limitPerType, includeMature)));
+  if (types.has("manga"))
+    jobs.alltime.push(track("AniList", anilistProvider.mangaTop(limitPerType, includeMature)));
+  if (types.has("movie"))
+    jobs.alltime.push(track("IMDb", cinemetaTop("movie", limitPerType)));
+  if (types.has("series"))
+    jobs.alltime.push(track("IMDb", cinemetaTop("series", limitPerType)));
+  if (types.has("game") && rawgProvider.isConfigured())
+    jobs.alltime.push(track("RAWG", rawgTop(limitPerType, visibility)));
+  if (types.has("book"))
+    jobs.alltime.push(track("Open Library", openLibrarySubject("classics", limitPerType)));
+  if (types.has("comic"))
+    jobs.alltime.push(track("Open Library", openLibraryComicShelf(limitPerType)));
+
+  // ---- iconic classics (era windows — real queries, not curated lists)
+  if (types.has("anime"))
+    jobs.classics.push(track("AniList", anilistProvider.animeClassics(1995, limitPerType, includeMature)));
+  if (types.has("manga"))
+    jobs.classics.push(track("AniList", anilistProvider.mangaClassics(2000, limitPerType, includeMature)));
+  if (types.has("movie"))
+    jobs.classics.push(
+      track("IMDb", cinemetaTopDeep("movie", 200).then((items) =>
+        items.filter((m) => (m.releaseYear ?? 0) <= 1999).slice(0, limitPerType),
+      )),
+    );
+  if (types.has("series"))
+    jobs.classics.push(
+      track("IMDb", cinemetaTopDeep("series", 200).then((items) =>
+        items.filter((m) => (m.releaseYear ?? 0) <= 2003).slice(0, limitPerType),
+      )),
+    );
+  if (types.has("game") && rawgProvider.isConfigured())
+    jobs.classics.push(track("RAWG", rawgClassics(limitPerType, visibility)));
+  if (types.has("book"))
+    jobs.classics.push(track("Open Library", openLibraryBookClassics(limitPerType)));
+  if (types.has("comic"))
+    jobs.classics.push(track("Open Library", openLibraryComicClassics(limitPerType)));
+
+  // ---- popular right now (movies/series have no keyless trending source —
+  //      the IMDb top list covers them under all-time/acclaimed instead)
+  if (types.has("anime"))
+    jobs.popular.push(track("Kitsu", kitsuProvider.trending(limitPerType)));
+  if (types.has("manga"))
+    jobs.popular.push(track("Kitsu", kitsuProvider.mangaTrending(limitPerType)));
+  if (types.has("game") && rawgProvider.isConfigured())
+    jobs.popular.push(track("RAWG", rawgRecentPopular(limitPerType, visibility)));
+  if (types.has("book"))
+    jobs.popular.push(track("Open Library", openLibraryTrending(limitPerType)));
+
+  // ---- critically acclaimed
+  if (types.has("anime"))
+    jobs.acclaimed.push(track("AniList", anilistProvider.animeAcclaimed(limitPerType, includeMature)));
+  if (types.has("manga"))
+    jobs.acclaimed.push(track("AniList", anilistProvider.mangaAcclaimed(limitPerType, includeMature)));
+  if (types.has("game") && rawgProvider.isConfigured())
+    jobs.acclaimed.push(track("RAWG", rawgTopRated(limitPerType, visibility)));
+
+  // ---- hidden gems
+  if (types.has("anime"))
+    jobs.gems.push(track("AniList", anilistProvider.animeGems(limitPerType, includeMature)));
+  if (types.has("manga"))
+    jobs.gems.push(track("AniList", anilistProvider.mangaGems(limitPerType, includeMature)));
+  if (types.has("game") && rawgProvider.isConfigured())
+    jobs.gems.push(track("RAWG", rawgIndieGems(limitPerType, visibility)));
+
+  const excluded = new Set(opts.excludedGenres ?? []);
+  const skipIds = opts.skipLocalIds ?? new Set<string>();
+
+  const settled = await Promise.all(
+    (Object.keys(jobs) as DiscoverSectionId[]).map(async (id) => {
+      const batches = await Promise.all(jobs[id]);
+      return { id, batches };
+    }),
+  );
+
+  // assemble sections with GLOBAL dedupe across sections in display order —
+  // a title may appear in at most one curated section
+  const order: DiscoverSectionId[] = ["alltime", "classics", "popular", "acclaimed", "gems"];
+  const takenIds = new Set<string>();
+  const takenTitles = new Set<string>();
+  const sections: DiscoverSection[] = [];
+
+  const acceptable = (item: MediaItem): boolean => {
+    if (skipIds.has(item.localId)) return false;
+    if (takenIds.has(item.localId)) return false;
+    if (item.releaseYear && item.releaseYear > new Date().getFullYear() + 1) return false;
+    if (item.genres.some((g) => excluded.has(g))) return false;
+    const tk = titleKey(item);
+    if (takenTitles.has(tk)) return false;
+    return true;
+  };
+
+  for (const id of order) {
+    const entry = settled.find((s) => s.id === id);
+    if (!entry) continue;
+    const byType = new Map<MediaType, MediaItem[]>();
+    for (const batch of entry.batches) {
+      for (const item of batch) {
+        if (!acceptable(item)) continue;
+        const list = byType.get(item.mediaType) ?? [];
+        list.push(item);
+        byType.set(item.mediaType, list);
+      }
+    }
+    const mixed = mixByMediaType(
+      [...byType.entries()].map(([type, items]) => ({ type, items })),
+      maxPerSection,
+    );
+    for (const item of mixed) {
+      takenIds.add(item.localId);
+      takenTitles.add(titleKey(item));
+    }
+    if (mixed.length) sections.push({ id, items: mixed });
+  }
+
+  return { sections, sources: [...sources], errors };
 }
 
 export function allProviders(): CatalogueProvider[] {
