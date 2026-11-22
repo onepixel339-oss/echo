@@ -81,10 +81,12 @@ export class TvMazeProvider implements CatalogueProvider {
 
   capabilities = {
     anime: false,
+    manga: false,
     movies: false,
     series: true,
     games: false,
     books: false,
+    comics: false,
     contentRatings: false,
     relatedTitles: false,
   };

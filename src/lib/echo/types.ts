@@ -4,12 +4,27 @@
  * All user data is local-first (IndexedDB). No server, no accounts.
  */
 
-export type MediaType = "anime" | "movie" | "series" | "game" | "book";
+export type MediaType =
+  | "anime"
+  | "manga"
+  | "movie"
+  | "series"
+  | "game"
+  | "book"
+  | "comic";
 
 /** Coarse running format, derived from mediaType + episode count. */
 export type MediaFormat = "film" | "series" | "game" | "book";
 
-export const MEDIA_TYPES: MediaType[] = ["anime", "movie", "series", "game", "book"];
+export const MEDIA_TYPES: MediaType[] = [
+  "anime",
+  "manga",
+  "movie",
+  "series",
+  "game",
+  "book",
+  "comic",
+];
 
 /** The three legacy screen types (pre-expansion), used for migrations. */
 export const LEGACY_MEDIA_TYPES: MediaType[] = ["anime", "movie", "series"];
@@ -22,10 +37,17 @@ export function formatForType(mediaType: MediaType): MediaFormat {
     case "game":
       return "game";
     case "book":
+    case "manga":
+    case "comic":
       return "book";
     default:
       return "series"; // anime & series are episodic by default
   }
+}
+
+/** Reading-format media (books, manga, comics) share the "reading" verb. */
+export function isReadingType(mediaType: MediaType): boolean {
+  return mediaType === "book" || mediaType === "manga" || mediaType === "comic";
 }
 
 export type LibraryStatus =
@@ -141,7 +163,7 @@ export interface AppSettings {
 export const DEFAULT_SETTINGS: AppSettings = {
   language: "en",
   theme: "dark",
-  interests: ["anime", "movie", "series", "game", "book"],
+  interests: ["anime", "manga", "movie", "series", "game", "book", "comic"],
   onboarded: false,
   demoMode: false,
   contentVisibility: "moderate",
@@ -150,16 +172,30 @@ export const DEFAULT_SETTINGS: AppSettings = {
   animations: true,
   excludedGenres: [],
   dismissedInsights: [],
-  schemaVersion: 2,
+  schemaVersion: 3,
 };
 
 /** v1 → v2: the catalogue grew games (RAWG) and books (Open Library).
- *  Existing users never opted out of types that did not exist, so the
- *  expansion is additive — they can turn either off in Settings. */
+ *  v2 → v3: the catalogue grew manga (AniList/Kitsu) and comics (Open
+ *  Library). Existing users never opted out of types that did not exist, so
+ *  each expansion is additive — they can turn any off in Settings. */
 export function migrateSettings(settings: AppSettings): AppSettings {
-  if (settings.schemaVersion >= 2) return settings;
-  const interests = [...new Set([...settings.interests, "game" as MediaType, "book" as MediaType])];
-  return { ...settings, interests, schemaVersion: 2 };
+  let s = settings;
+  if (s.schemaVersion < 2) {
+    s = {
+      ...s,
+      interests: [...new Set([...s.interests, "game" as MediaType, "book" as MediaType])],
+      schemaVersion: 2,
+    };
+  }
+  if (s.schemaVersion < 3) {
+    s = {
+      ...s,
+      interests: [...new Set([...s.interests, "manga" as MediaType, "comic" as MediaType])],
+      schemaVersion: 3,
+    };
+  }
+  return s;
 }
 
 /** An edge in the similarity graph (spec 8.1). */

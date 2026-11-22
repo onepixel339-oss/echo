@@ -37,10 +37,12 @@ export interface CatalogueProvider {
   label: string;
   capabilities: {
     anime: boolean;
+    manga: boolean;
     movies: boolean;
     series: boolean;
     games: boolean;
     books: boolean;
+    comics: boolean;
     contentRatings: boolean;
     relatedTitles: boolean;
   };

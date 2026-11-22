@@ -14,7 +14,7 @@ const mediaItemSchema = z.object({
   provider: z.string().min(1),
   providerId: z.string(),
   canonicalUrl: z.string().optional(),
-  mediaType: z.enum(["anime", "movie", "series", "game", "book"]),
+  mediaType: z.enum(["anime", "manga", "movie", "series", "game", "book", "comic"]),
   format: z.enum(["film", "series", "game", "book"]),
   title: z.string().min(1),
   titleAr: z.string().optional(),
@@ -68,7 +68,7 @@ const bundleSchema = z.object({
   settings: z
     .object({
       language: z.enum(["en", "ar"]).optional(),
-      interests: z.array(z.enum(["anime", "movie", "series", "game", "book"])).optional(),
+      interests: z.array(z.enum(["anime", "manga", "movie", "series", "game", "book", "comic"])).optional(),
       recencyWeight: z.boolean().optional(),
       mapLabels: z.boolean().optional(),
       animations: z.boolean().optional(),

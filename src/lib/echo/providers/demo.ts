@@ -23,10 +23,12 @@ export class DemoProvider implements CatalogueProvider {
 
   capabilities = {
     anime: true,
+    manga: true,
     movies: true,
     series: true,
-    games: false,
-    books: false,
+    games: true,
+    books: true,
+    comics: true,
     contentRatings: true, // approximate
     relatedTitles: false,
   };
