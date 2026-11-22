@@ -6,7 +6,17 @@
 "use client";
 
 import React from "react";
-import { Star, Clapperboard, Tv, Sparkles, Heart, Gamepad2, BookOpen } from "lucide-react";
+import {
+  Star,
+  Clapperboard,
+  Tv,
+  Sparkles,
+  Heart,
+  Gamepad2,
+  BookOpen,
+  BookText,
+  PanelsTopLeft,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/echo/i18n";
 import { posterDataUrl } from "@/lib/echo/poster";
@@ -139,11 +149,13 @@ export function StatusChip({
   );
 }
 
-/** i18n key for a status, medium-aware: watching → playing (games) / reading (books). */
+/** i18n key for a status, medium-aware: watching → playing (games) / reading (books, manga, comics). */
 export function statusLabelKey(status: LibraryStatus, mediaType?: MediaItem["mediaType"]): string {
   if (status === "watching") {
     if (mediaType === "game") return "status.playing";
-    if (mediaType === "book") return "status.reading";
+    if (mediaType === "book" || mediaType === "manga" || mediaType === "comic") {
+      return "status.reading";
+    }
   }
   return `status.${status}`;
 }
@@ -155,6 +167,8 @@ export function MediaTypeIcon({ type, className }: { type: MediaType; className?
   if (type === "series") return <Tv className={className} aria-hidden />;
   if (type === "game") return <Gamepad2 className={className} aria-hidden />;
   if (type === "book") return <BookOpen className={className} aria-hidden />;
+  if (type === "manga") return <BookText className={className} aria-hidden />;
+  if (type === "comic") return <PanelsTopLeft className={className} aria-hidden />;
   return <Sparkles className={className} aria-hidden />;
 }
 
@@ -169,6 +183,10 @@ export function mediaTypeLabel(type: MediaType): string {
       return "Game";
     case "book":
       return "Book";
+    case "manga":
+      return "Manga";
+    case "comic":
+      return "Comics";
     default:
       return "Anime";
   }
