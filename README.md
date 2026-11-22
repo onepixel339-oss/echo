@@ -24,10 +24,12 @@ The app needs **zero configuration** to deploy:
 1. Push this repository to GitHub.
 2. On [vercel.com](https://vercel.com) → **Add New… → Project** → import the repo.
 3. Vercel auto-detects Next.js (Node 20.9+). Leave every field at its default.
-4. *(Optional but recommended)* → **Environment Variables** → add
-   `GEMINI_API_KEY` with a free key from
-   [Google AI Studio](https://aistudio.google.com/apikey) to switch on the AI
-   features (Ask ECHO, Taste Companion, weekly digest, synopsis translation).
+4. *(Optional)* → **Environment Variables** → add `GEMINI_API_KEY` with a
+   free key from [Google AI Studio](https://aistudio.google.com/apikey) to
+   upgrade the AI features (Ask ECHO, Taste Companion, weekly digest) to
+   Gemini — faster and higher quality. They already work keylessly through
+   a free community provider; the key is a quality upgrade, not a
+   requirement. (Synopsis translation is always keyless.)
 5. **Deploy.**
 
 That is the entire process. No database, no paid services, no other keys —
@@ -130,7 +132,7 @@ src/
       layout.ts            # island-surveyor layout
       identityCard.ts      # shareable taste identity card
     ai/                    # AI features (same-origin routes, graceful degradation)
-      llm.ts               # provider chain: Gemini (env key) → platform AI
+      llm.ts               # provider chain: Gemini (env key) → platform AI → keyless Pollinations
       ask.ts / companion.ts / weekly.ts   # client halves
     providers/             # real catalogue sources + offline fallback
       anilist.ts           # anime (GraphQL search, genre pools)
@@ -186,16 +188,18 @@ npm run smoke      # live smoke test: RAWG + Open Library + candidate pools (req
 ```
 
 No environment configuration is required: every catalogue source — games
-included, via the built-in RAWG key — works out of the box. To enable the AI
-features, copy `.env.example` to `.env.local` and set `GEMINI_API_KEY`
-(free key: https://aistudio.google.com/apikey). Without it they degrade
-gracefully and the rest of the app is unaffected.
+included, via the built-in RAWG key — works out of the box, and the AI
+features run on a free keyless community provider (Pollinations) with no
+setup at all. To upgrade them to Gemini, copy `.env.example` to `.env.local`
+and set `GEMINI_API_KEY` (free key: https://aistudio.google.com/apikey).
+If every provider fails, AI features degrade gracefully and the rest of the
+app is unaffected.
 
 ## Environment variables (all optional)
 
 | Variable | Purpose |
 | --- | --- |
-| `GEMINI_API_KEY` | Free Google AI Studio key → enables Ask ECHO, Taste Companion, weekly digest, synopsis translation |
+| `GEMINI_API_KEY` | Optional quality upgrade for Ask ECHO / Taste Companion / weekly digest: free Google AI Studio key → Gemini runs first in the provider chain (keyless community AI is the zero-config default) |
 | `GEMINI_MODEL` | Pin one Gemini model instead of the free chain (gemini-3.8-flash → gemini-3.5-flash-lite) |
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Growth swap point for shared rate-limit/cache across serverless instances — see `src/lib/echo/server/kv.ts` |
 
@@ -212,8 +216,9 @@ naming, layout determinism and layout stability on additions (≤ 60px drift).
 
 - Games run on a shared built-in RAWG key (free tier: ~20k requests/month
   across all users).
-- Without `GEMINI_API_KEY` the AI features are disabled; everything else
-  works fully.
+- The keyless AI fallback (Pollinations) is a shared free community service:
+  slower and rate-limited. Set `GEMINI_API_KEY` for the best experience;
+  if every provider fails the AI features degrade gracefully.
 - Cinemeta does not provide per-region certifications; movie maturity data is
   coarse (adult content is filtered, everything else shows as unrated).
 - Import/export covers library, feedback and non-secret settings; provider
