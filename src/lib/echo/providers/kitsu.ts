@@ -1,5 +1,5 @@
 /**
- * ECHO — Kitsu adapter (anime).
+ * ECHO — Kitsu adapter (anime + manga).
  *
  * Real source: Kitsu's public JSON:API (kitsu.io / kitsu.app). No key
  * required. Rich data: titles, categories (used as genres/tags), posters,
@@ -53,7 +53,7 @@ interface KitsuCategory {
 
 interface KitsuResource {
   id: string;
-  type: "anime";
+  type: "anime" | "manga";
   attributes: KitsuAttributes;
   relationships?: {
     categories?: { data?: { id: string; type: string }[] };
@@ -118,6 +118,7 @@ function categoriesToFeatures(
 function toMediaItem(
   res: KitsuResource,
   categories: KitsuCategory[] | undefined,
+  kind: "anime" | "manga" = "anime",
 ): MediaItem {
   const a = res.attributes;
   const titles = a.titles ?? {};
@@ -126,12 +127,15 @@ function toMediaItem(
   const isFilm = a.subtype === "MOVIE";
   const feats = categoriesToFeatures(categories);
   return {
-    localId: `kitsu:${res.id}`,
-    provider: "kitsu",
+    localId: kind === "manga" ? `kitsu-m:${res.id}` : `kitsu:${res.id}`,
+    provider: kind === "manga" ? "kitsu-m" : "kitsu",
     providerId: res.id,
-    canonicalUrl: `https://kitsu.app/anime/${res.id}`,
-    mediaType: "anime" as MediaType,
-    format: (isFilm ? "film" : "series") as MediaFormat,
+    canonicalUrl:
+      kind === "manga"
+        ? `https://kitsu.app/manga/${res.id}`
+        : `https://kitsu.app/anime/${res.id}`,
+    mediaType: (kind === "manga" ? "manga" : "anime") as MediaType,
+    format: (kind === "manga" ? "book" : isFilm ? "film" : "series") as MediaFormat,
     title,
     originalTitle:
       titles.en_jp && titles.en_jp !== title
@@ -145,7 +149,7 @@ function toMediaItem(
     releaseYear: a.startDate ? Number(a.startDate.slice(0, 4)) : undefined,
     genres: feats.genres,
     tags: feats.tags.slice(0, 6),
-    episodeCount: isFilm ? undefined : (a.episodeCount ?? undefined),
+    episodeCount: kind === "manga" || isFilm ? undefined : (a.episodeCount ?? undefined),
     publicScore: a.averageRating ? Number(a.averageRating) / 10 : undefined,
     contentRating: a.nsfw ? "R18+" : mapAgeRating(a.ageRating),
     posterUrl: a.posterImage?.large ?? a.posterImage?.medium ?? a.posterImage?.original,
@@ -173,16 +177,35 @@ const KITSU_CATEGORY: Record<string, string> = {
   "sci-fi": "science-fiction",
 };
 
+/** Kitsu manga subtypes that belong to the Manga category (novels are books,
+ *  doujin is fan work, oel/onshouri stay in). */
+const MANGA_SUBTYPES = new Set(["manga", "manhwa", "manhua", "oel", "oneshot"]);
+
+function isMangaRow(res: KitsuResource): boolean {
+  return MANGA_SUBTYPES.has(res.attributes.subtype ?? "");
+}
+
+/** Season/part-numbered entries are re-releases of the same work, not
+ *  standalone shelves candidates — keep the original entry point instead. */
+const SEASONAL_TITLE = /\b(season|part|vol(ume)?|chapter)\s*\d+\b|[:#]\s*(vol\.)?\s*\d+\b/i;
+
+function isStandaloneMangaTitle(res: KitsuResource): boolean {
+  const title = res.attributes.canonicalTitle ?? "";
+  return !SEASONAL_TITLE.test(title);
+}
+
 export class KitsuProvider implements CatalogueProvider {
   id = "kitsu";
   label = "Kitsu";
 
   capabilities = {
     anime: true,
+    manga: true,
     movies: false,
     series: false,
     games: false,
     books: false,
+    comics: false,
     contentRatings: true,
     relatedTitles: false,
   };
@@ -244,6 +267,62 @@ export class KitsuProvider implements CatalogueProvider {
     });
   }
 
+  /** Manga search — Kitsu's /manga endpoint, light novels excluded. */
+  async searchManga(query: string, filters?: SearchFilters): Promise<ProviderSearchResult[]> {
+    const q = query.trim();
+    if (!q) return [];
+    const limit = filters?.limit ?? 8;
+    const page = await fetchJson<KitsuPage>(
+      `${API}/manga?filter%5Btext%5D=${encodeURIComponent(q)}&include=categories&page%5Blimit%5D=${Math.min(20, limit * 2)}`,
+    );
+    return pageResources(page)
+      .filter((r) => !r.attributes.nsfw && isMangaRow(r) && isStandaloneMangaTitle(r))
+      .slice(0, limit)
+      .map((r) => ({
+        item: toMediaItem(r, categoriesOf(page, r), "manga"),
+        sourceLabel: "Kitsu",
+      }));
+  }
+
+  /** Trending manga (real Kitsu trending endpoint) — extra Discover pool.
+   *  Cached 15 min: identical for everyone. */
+  private mangaTrendingCache = new TTLCache<MediaItem[]>(15 * 60_000);
+
+  async mangaTrending(limit = 20): Promise<MediaItem[]> {
+    return cached(this.mangaTrendingCache, `trending|${limit}`, async () => {
+      const page = await fetchJson<KitsuPage>(
+        `${API}/trending/manga?limit=${limit}&include=categories`,
+      );
+      return pageResources(page)
+        .filter((r) => !r.attributes.nsfw && isMangaRow(r) && isStandaloneMangaTitle(r))
+        .map((r) => toMediaItem(r, categoriesOf(page, r), "manga"));
+    });
+  }
+
+  /** Popular manga in given genres — Discover pool by taste. Cached 30 min. */
+  private mangaGenreCache = new TTLCache<MediaItem[]>(30 * 60_000);
+
+  async mangaByGenres(genres: string[], limit = 20, includeMature = false): Promise<MediaItem[]> {
+    const cats = genres
+      .slice(0, 2)
+      .map((g) => KITSU_CATEGORY[g] ?? g)
+      .filter(Boolean)
+      .join(",");
+    return cached(this.mangaGenreCache, `${cats}|${limit}|${includeMature}`, async () => {
+      const page = await fetchJson<KitsuPage>(
+        `${API}/manga?filter%5Bcategories%5D=${encodeURIComponent(cats)}&sort=-userCount&include=categories&page%5Blimit%5D=${limit}`,
+      );
+      return pageResources(page)
+        .filter(
+          (r) =>
+            (includeMature || (!r.attributes.nsfw && r.attributes.ageRating !== "R18")) &&
+            isMangaRow(r) &&
+            isStandaloneMangaTitle(r),
+        )
+        .map((r) => toMediaItem(r, categoriesOf(page, r), "manga"));
+    });
+  }
+
   async getTitle(providerId: string): Promise<MediaItem | null> {
     const page = await fetchJson<KitsuPage>(
       `${API}/anime/${encodeURIComponent(providerId)}?include=categories`,
@@ -251,6 +330,16 @@ export class KitsuProvider implements CatalogueProvider {
     const res = pageResources(page)[0];
     if (!res?.id) return null;
     return toMediaItem(res, categoriesOf(page, res));
+  }
+
+  /** Fetch a manga record by its Kitsu id. */
+  async getTitleManga(providerId: string): Promise<MediaItem | null> {
+    const page = await fetchJson<KitsuPage>(
+      `${API}/manga/${encodeURIComponent(providerId)}?include=categories`,
+    );
+    const res = pageResources(page)[0];
+    if (!res?.id) return null;
+    return toMediaItem(res, categoriesOf(page, res), "manga");
   }
 
   getAttribution() {
