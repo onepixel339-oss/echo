@@ -8,6 +8,9 @@
  *      var. Optional GEMINI_MODEL overrides the default flash model.
  *   2. Platform AI (z-ai-web-dev-sdk) — zero-config inside this sandbox;
  *      loaded dynamically so a deploy without it never crashes on import.
+ *   3. Pollinations (text.pollinations.ai) — keyless community endpoint
+ *      (anonymous tier, gpt-oss-20b behind the "openai" alias). Last
+ *      resort so a zero-config Vercel deploy still gets working AI.
  *
  * Every caller gets a plain string or an exception; graceful degradation and
  * retries are the callers' concern. Message convention: messages[0] with
@@ -125,6 +128,45 @@ async function callGemini(messages: LlmMessage[], timeoutMs: number): Promise<st
 }
 
 /**
+ * Keyless community fallback — Pollinations text API (POST /openai,
+ * anonymous tier: no key, no account; gpt-oss-20b via the "openai"
+ * alias). Used ONLY after Gemini and the platform provider both fail, so
+ * a zero-config deploy (e.g. Vercel without any key) still gets working
+ * AI features. Public shared service — our routes already rate-limit
+ * politely, and the timeout is capped to keep the whole chain inside the
+ * serverless budget.
+ */
+async function callPollinations(messages: LlmMessage[], timeoutMs: number): Promise<string> {
+  const hasSystem = messages.length > 0 && messages[0].role === "assistant";
+  const system = hasSystem ? messages[0].content : undefined;
+  const convo = (hasSystem ? messages.slice(1) : messages).map((m) => ({
+    role: m.role === "assistant" ? ("assistant" as const) : ("user" as const),
+    content: m.content,
+  }));
+
+  const res = await withTimeout(
+    fetch("https://text.pollinations.ai/openai", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        model: "openai",
+        messages: system ? [{ role: "system", content: system }, ...convo] : convo,
+      }),
+    }),
+    timeoutMs,
+  );
+  if (!res.ok) {
+    throw new Error(`pollinations ${res.status}`);
+  }
+  const data = (await res.json()) as {
+    choices?: { message?: { content?: string } }[];
+  };
+  const text = data.choices?.[0]?.message?.content?.trim() ?? "";
+  if (!text) throw new Error("empty pollinations completion");
+  return text;
+}
+
+/**
  * Run the provider chain. When GEMINI_API_KEY is set (the deploy-anywhere
  * path — e.g. Vercel) Gemini is tried FIRST so requests never wait on a
  * platform provider that does not exist there. Otherwise the zero-config
@@ -147,6 +189,13 @@ export async function callLlm(
 
   try {
     return await callPlatform(messages, timeoutMs);
+  } catch (err) {
+    lastError = err;
+  }
+
+  // Keyless last resort — keeps AI features alive on a zero-config deploy.
+  try {
+    return await callPollinations(messages, Math.min(timeoutMs, 30_000));
   } catch (err) {
     lastError = err;
   }
