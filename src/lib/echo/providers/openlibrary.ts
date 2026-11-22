@@ -1,5 +1,5 @@
 /**
- * ECHO — Open Library adapter (books).
+ * ECHO — Open Library adapter (books + comics).
  *
  * Open Library (openlibrary.org) is the Internet Archive's open catalogue —
  * fully keyless, CORS-enabled, attributed. Everything works out of the box:
@@ -7,6 +7,8 @@
  *  - details    /works/{key}.json         (description, authors, subjects)
  *  - shelves    /subjects/{slug}.json     (most-read books in a subject)
  *  - trending   /trending/weekly.json     (what the world is reading now)
+ *  - comics     search scoped with subject="graphic novels" + a
+ *               canon shelf sorted by edition count (most-published works)
  */
 
 import type { MediaItem } from "../types";
@@ -73,6 +75,25 @@ function isJunkSubject(s: string): boolean {
   for (const frag of JUNK_FRAGMENTS) if (s.includes(frag)) return true;
   for (const nat of JUNK_NATIONALITIES) if (s.startsWith(`${nat} `)) return true;
   return false;
+}
+
+/* ---------------- comics (graphic novels) ---------------- */
+
+/** Subject shapes that mark a work as comic-format (the MEDIUM, not a genre).
+ *  Used to (a) route works between the Books and Comics categories and
+ *  (b) keep medium subjects out of the genre vocabulary. */
+const COMIC_MEDIUM_SUBJECT =
+  /^(comics?|comic books?(, strips)?|comic strip|graphic novels?|bandes dessin[ée]es?|comicroman|manga|manhwa|manhua)$/i;
+
+const COMIC_MEDIUM_PREFIX = /^(comics & graphic novels|graphic novels|comic books|comic strips|bandes dessin)/i;
+
+/** True when a work's subjects say it is a comic / graphic novel. */
+export function isComicWork(subjects: string[] | undefined): boolean {
+  if (!subjects?.length) return false;
+  return subjects.some((s) => {
+    const t = s.trim().toLowerCase();
+    return COMIC_MEDIUM_SUBJECT.test(t) || COMIC_MEDIUM_PREFIX.test(t);
+  });
 }
 
 /** Open Library subject → ECHO canonical slug (after slugification). */
@@ -159,13 +180,16 @@ function slugify(s: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-/** Convert messy Open Library subjects into clean canonical genre slugs. */
+/** Convert messy Open Library subjects into clean canonical genre slugs.
+ *  Comic-medium subjects ("Graphic novels", "Comic books, strips") describe
+ *  the format, not taste, and are skipped like other cataloguing noise. */
 export function subjectsToGenres(subjects: string[] | undefined, max = 4): string[] {
   if (!subjects?.length) return [];
   const out: string[] = [];
   for (const raw of subjects) {
     const s = raw.trim().toLowerCase();
     if (isJunkSubject(s)) continue;
+    if (COMIC_MEDIUM_SUBJECT.test(s) || COMIC_MEDIUM_PREFIX.test(s)) continue;
     const slug = slugify(raw);
     const canon = normalizeGenre(SUBJECT_ALIASES[slug] ?? slug);
     if (!canon || canon.length < 2) continue;
@@ -184,7 +208,7 @@ function coverUrl(doc: { cover_i?: number; cover_id?: number }): string | undefi
   return id ? `${COVERS}/${id}-L.jpg` : undefined;
 }
 
-function toMediaItem(doc: OlDoc, genres?: string[]): MediaItem {
+function toMediaItem(doc: OlDoc, genres?: string[], mediaType: "book" | "comic" = "book"): MediaItem {
   const id = workId(doc.key);
   const year = doc.first_publish_year;
   return {
@@ -192,7 +216,7 @@ function toMediaItem(doc: OlDoc, genres?: string[]): MediaItem {
     provider: "openlib",
     providerId: id,
     canonicalUrl: `https://openlibrary.org/works/${id}`,
-    mediaType: "book",
+    mediaType,
     format: "book",
     title: doc.title,
     creators: doc.author_name?.slice(0, 3),
@@ -216,10 +240,12 @@ export class OpenLibraryProvider implements CatalogueProvider {
 
   capabilities = {
     anime: false,
+    manga: false,
     movies: false,
     series: false,
     games: false,
     books: true,
+    comics: true,
     contentRatings: false,
     relatedTitles: false,
   };
@@ -232,13 +258,42 @@ export class OpenLibraryProvider implements CatalogueProvider {
     const q = query.trim();
     if (!q) return [];
     const limit = filters?.limit ?? 8;
+    const types = filters?.mediaTypes ?? [];
+    const wantBooks = types.length === 0 || types.includes("book");
+    const wantComics = types.length === 0 || types.includes("comic");
+
+    // Comics category: scope the query to graphic-novel subjects (verified:
+    // the subject param filters correctly whenever q is non-empty).
+    if (wantComics && !wantBooks) {
+      const data = await fetchJson<OlSearchResponse>(
+        `${OL}/search.json?q=${encodeURIComponent(q)}&subject=${encodeURIComponent("graphic novels")}&limit=${limit}` +
+          `&fields=key,title,author_name,first_publish_year,cover_i,subject,language`,
+      );
+      const docs = (data?.docs ?? []).filter((d) => d.key?.startsWith("/works/") && d.title);
+      return docs
+        .slice(0, limit)
+        .map((d) => ({ item: toMediaItem(d, undefined, "comic"), sourceLabel: "Open Library" }));
+    }
+
     const data = await fetchJson<OlSearchResponse>(
       `${OL}/search.json?q=${encodeURIComponent(q)}&limit=${limit}` +
         `&fields=key,title,author_name,first_publish_year,cover_i,subject,language`,
     );
     // keep only work records with a real title
     const docs = (data?.docs ?? []).filter((d) => d.key?.startsWith("/works/") && d.title);
-    return docs.slice(0, limit).map((d) => ({ item: toMediaItem(d), sourceLabel: "Open Library" }));
+    const out: ProviderSearchResult[] = [];
+    for (const d of docs) {
+      const comic = isComicWork(d.subject);
+      // category isolation: comic-format works appear only in Comics/All
+      if (comic && !wantComics) continue;
+      if (!comic && !wantBooks) continue;
+      out.push({
+        item: toMediaItem(d, undefined, comic ? "comic" : "book"),
+        sourceLabel: "Open Library",
+      });
+      if (out.length >= limit) break;
+    }
+    return out;
   }
 
   async getTitle(providerId: string): Promise<MediaItem | null> {
@@ -266,6 +321,8 @@ export class OpenLibraryProvider implements CatalogueProvider {
       subject: work.subjects,
     };
     const item = toMediaItem(doc);
+    // a stored work may be a comic — keep its category honest on refresh
+    if (isComicWork(work.subjects)) item.mediaType = "comic";
     // works endpoint has no cover id — carry a search-level cover if available
     if (!item.posterUrl) {
       try {
@@ -369,5 +426,63 @@ export async function openLibraryArabicShelf(limit = 16): Promise<MediaItem[]> {
           author_name: w.author_name ?? w.authors?.map((a) => a.name),
         }),
       );
+  });
+}
+
+/* ---------------- comics shelves (Discover) ---------------- */
+
+interface OlSearchWork extends OlDoc {
+  author_name?: string[];
+}
+
+const comicShelfCache = new TTLCache<MediaItem[]>(60 * 60_000);
+
+/**
+ * The comics canon — most-published graphic novels (sorted by edition count,
+ * a real signal of notability: Watchmen, The Dark Knight Returns, Maus…).
+ * Cached 60 min: identical for every user.
+ */
+export async function openLibraryComicShelf(limit = 20): Promise<MediaItem[]> {
+  return cached(comicShelfCache, `canon|${limit}`, async () => {
+    const data = await fetchJson<{ docs?: OlSearchWork[] }>(
+      `${OL}/search.json?q=${encodeURIComponent('subject:"graphic novels"')}&sort=editions&limit=${limit}` +
+        `&fields=key,title,author_name,first_publish_year,cover_i,subject`,
+    );
+    return (data?.docs ?? [])
+      .filter((w) => w.key?.startsWith("/works/") && w.title)
+      .slice(0, limit)
+      .map((w) => toMediaItem(w, undefined, "comic"));
+  });
+}
+
+const comicClassicsCache = new TTLCache<MediaItem[]>(60 * 60_000);
+
+/** Classic comics — notable graphic novels first published before 2000. */
+export async function openLibraryComicClassics(limit = 16): Promise<MediaItem[]> {
+  return cached(comicClassicsCache, `classics|${limit}`, async () => {
+    const data = await fetchJson<{ docs?: OlSearchWork[] }>(
+      `${OL}/search.json?q=${encodeURIComponent('subject:"graphic novels" first_publish_year:[* TO 1999]')}&sort=editions&limit=${limit}` +
+        `&fields=key,title,author_name,first_publish_year,cover_i,subject`,
+    );
+    return (data?.docs ?? [])
+      .filter((w) => w.key?.startsWith("/works/") && w.title)
+      .slice(0, limit)
+      .map((w) => toMediaItem(w, undefined, "comic"));
+  });
+}
+
+const bookClassicsCache = new TTLCache<MediaItem[]>(60 * 60_000);
+
+/** Golden-age book classics — most-published literary classics (pre-1950). */
+export async function openLibraryBookClassics(limit = 16): Promise<MediaItem[]> {
+  return cached(bookClassicsCache, `classics|${limit}`, async () => {
+    const data = await fetchJson<{ docs?: OlSearchWork[] }>(
+      `${OL}/search.json?q=${encodeURIComponent('subject:classics first_publish_year:[* TO 1949]')}&sort=editions&limit=${limit}` +
+        `&fields=key,title,author_name,first_publish_year,cover_i,subject`,
+    );
+    return (data?.docs ?? [])
+      .filter((w) => w.key?.startsWith("/works/") && w.title)
+      .slice(0, limit)
+      .map((w) => toMediaItem(w));
   });
 }

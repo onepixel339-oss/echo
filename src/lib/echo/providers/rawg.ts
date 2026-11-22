@@ -214,10 +214,12 @@ export class RawgProvider implements CatalogueProvider {
 
   capabilities = {
     anime: false,
+    manga: false,
     movies: false,
     series: false,
     games: true,
     books: false,
+    comics: false,
     contentRatings: true, // ESRB
     relatedTitles: false,
   };
@@ -343,6 +345,116 @@ export async function rawgUpcoming(
           g.released > fmt(from) && // strictly upcoming: not released yet
           esrbAllowedByVisibility(g.esrb_rating?.name, visibility),
       )
+      .slice(0, limit)
+      .map((g) => toMediaItem(g));
+  });
+}
+
+/**
+ * Classic games — most-added releases from a golden era window (1980–2005).
+ * Cached 60 min. A real era query via the `dates` parameter.
+ */
+const classicsCache = new TTLCache<MediaItem[]>(60 * 60_000);
+
+export async function rawgClassics(
+  limit = 20,
+  visibility: ContentVisibility = "moderate",
+): Promise<MediaItem[]> {
+  return cached(classicsCache, `classics|${limit}|${visibility}`, async () => {
+    const data = await fetchJson<RawgListResponse>(
+      rawgUrl("/games", {
+        dates: "1980-01-01,2005-12-31",
+        ordering: "-added",
+        page_size: limit,
+        exclude_additions: "true",
+      }),
+    );
+    return (data?.results ?? [])
+      .filter((g) => g.name && esrbAllowedByVisibility(g.esrb_rating?.name, visibility))
+      .slice(0, limit)
+      .map((g) => toMediaItem(g));
+  });
+}
+
+/**
+ * Critically acclaimed games — highest Metacritic scores (85+).
+ * Cached 60 min: identical for every user.
+ */
+const topRatedCache = new TTLCache<MediaItem[]>(60 * 60_000);
+
+export async function rawgTopRated(
+  limit = 20,
+  visibility: ContentVisibility = "moderate",
+): Promise<MediaItem[]> {
+  return cached(topRatedCache, `toprated|${limit}|${visibility}`, async () => {
+    const data = await fetchJson<RawgListResponse>(
+      rawgUrl("/games", {
+        ordering: "-metacritic",
+        metacritic: "85,100",
+        page_size: limit,
+        exclude_additions: "true",
+      }),
+    );
+    return (data?.results ?? [])
+      .filter((g) => g.name && esrbAllowedByVisibility(g.esrb_rating?.name, visibility))
+      .slice(0, limit)
+      .map((g) => toMediaItem(g));
+  });
+}
+
+/**
+ * Indie darlings — highly-rated indie games (the games medium's hidden-gem
+ * lane; mainstream blockbusters are excluded by the indie genre filter).
+ * Cached 60 min.
+ */
+const indieGemsCache = new TTLCache<MediaItem[]>(60 * 60_000);
+
+export async function rawgIndieGems(
+  limit = 20,
+  visibility: ContentVisibility = "moderate",
+): Promise<MediaItem[]> {
+  return cached(indieGemsCache, `indiegems|${limit}|${visibility}`, async () => {
+    const data = await fetchJson<RawgListResponse>(
+      rawgUrl("/games", {
+        genres: "indie",
+        ordering: "-metacritic",
+        metacritic: "80,100",
+        page_size: limit,
+        exclude_additions: "true",
+      }),
+    );
+    return (data?.results ?? [])
+      .filter((g) => g.name && esrbAllowedByVisibility(g.esrb_rating?.name, visibility))
+      .slice(0, limit)
+      .map((g) => toMediaItem(g));
+  });
+}
+
+/**
+ * Recently popular games — most-added releases from the last 12 months (the
+ * "popular right now" lane; all-time favourites live in rawgTop).
+ * Cached 60 min.
+ */
+const recentCache = new TTLCache<MediaItem[]>(60 * 60_000);
+
+export async function rawgRecentPopular(
+  limit = 20,
+  visibility: ContentVisibility = "moderate",
+): Promise<MediaItem[]> {
+  return cached(recentCache, `recent|${limit}|${visibility}`, async () => {
+    const from = new Date();
+    from.setFullYear(from.getFullYear() - 1);
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    const data = await fetchJson<RawgListResponse>(
+      rawgUrl("/games", {
+        dates: `${fmt(from)},${fmt(new Date())}`,
+        ordering: "-added",
+        page_size: limit,
+        exclude_additions: "true",
+      }),
+    );
+    return (data?.results ?? [])
+      .filter((g) => g.name && esrbAllowedByVisibility(g.esrb_rating?.name, visibility))
       .slice(0, limit)
       .map((g) => toMediaItem(g));
   });

@@ -161,10 +161,12 @@ export class ImdbProvider implements CatalogueProvider {
 
   capabilities = {
     anime: false,
+    manga: false,
     movies: true,
     series: false,
     games: false,
     books: false,
+    comics: false,
     contentRatings: false,
     relatedTitles: false,
   };
@@ -200,10 +202,12 @@ export class ImdbSeriesProvider implements CatalogueProvider {
 
   capabilities = {
     anime: false,
+    manga: false,
     movies: false,
     series: true,
     games: false,
     books: false,
+    comics: false,
     contentRatings: false,
     relatedTitles: false,
   };
@@ -281,6 +285,38 @@ export async function cinemetaTop(kind: ImdbKind, limit = 24): Promise<MediaItem
     return metas
       .filter((m) => m.imdb_id && m.name)
       .slice(0, limit)
+      .map((m) =>
+        toMediaItem(
+          kind,
+          m.imdb_id as string,
+          m.name as string,
+          m,
+          m.year ? Number(String(m.year).slice(0, 4)) : undefined,
+        ),
+      );
+  });
+}
+
+/**
+ * Deep IMDb top list (two pages via the Stremio `skip` parameter, ~200 rows)
+ * for era filtering client-side: the classic-cinema shelf is the top-rated
+ * list filtered by release year — real rankings, no invention. Cached 6 h.
+ */
+const deepTopCache = new TTLCache<MediaItem[]>(6 * 60 * 60_000);
+
+export async function cinemetaTopDeep(kind: ImdbKind, maxItems = 200): Promise<MediaItem[]> {
+  return cached(deepTopCache, `${kind}|topdeep|${maxItems}`, async () => {
+    const pages = await Promise.allSettled([
+      fetchJson<{ metas?: CinemetaMeta[] }>(`${CINEMETA}/catalog/${kind}/top/skip=0.json`),
+      fetchJson<{ metas?: CinemetaMeta[] }>(`${CINEMETA}/catalog/${kind}/top/skip=100.json`),
+    ]);
+    const metas: CinemetaMeta[] = [];
+    for (const p of pages) {
+      if (p.status === "fulfilled") metas.push(...(p.value?.metas ?? []));
+    }
+    return metas
+      .filter((m) => m.imdb_id && m.name)
+      .slice(0, maxItems)
       .map((m) =>
         toMediaItem(
           kind,
