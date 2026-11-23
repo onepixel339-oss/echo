@@ -3,7 +3,7 @@
  * Run: npx tsx scripts/test-trailer.ts
  */
 
-import { ImdbProvider } from "../src/lib/echo/providers/imdb";
+import { ImdbProvider } from "../lib/echo/providers/imdb";
 
 async function main(): Promise<void> {
   const provider = new ImdbProvider();

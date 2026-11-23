@@ -2,9 +2,9 @@
  * LIVE provider verification (Phase 5, final routing) — a small number of
  * carefully controlled requests per provider, within documented limits.
  */
-import { MadbProvider } from "/home/z/my-project/src/lib/echo/providers/madb";
-import { InventaireProvider } from "/home/z/my-project/src/lib/echo/providers/inventaire";
-import { BnfProvider } from "/home/z/my-project/src/lib/echo/providers/bnf";
+import { MadbProvider } from "../lib/echo/providers/madb";
+import { InventaireProvider } from "../lib/echo/providers/inventaire";
+import { BnfProvider } from "../lib/echo/providers/bnf";
 
 const madb = new MadbProvider();
 const inv = new InventaireProvider();
@@ -46,7 +46,7 @@ try {
 }
 
 console.log("=== ENGINE — anime: cowboy bebop (merge check: AniList + MADB) ===");
-const { createFederatedSearch } = await import("/home/z/my-project/src/lib/echo/federated/engine");
+const { createFederatedSearch } = await import("../lib/echo/federated/engine");
 const t1 = Date.now();
 const handle = createFederatedSearch("cowboy bebop", { categories: ["anime"], limitPerProvider: 4 });
 const snap = await handle.promise;

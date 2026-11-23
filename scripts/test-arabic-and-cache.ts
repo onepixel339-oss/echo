@@ -8,9 +8,9 @@
  *  5. Full-catalogue mixed search still healthy
  * Run: bun scripts/test-arabic-and-cache.ts
  */
-import { searchCatalogue, fetchCandidatePool } from "../src/lib/echo/providers";
-import { rawgTop } from "../src/lib/echo/providers/rawg";
-import { openLibraryArabicShelf } from "../src/lib/echo/providers/openlibrary";
+import { searchCatalogue, fetchCandidatePool } from "../lib/echo/providers";
+import { rawgTop } from "../lib/echo/providers/rawg";
+import { openLibraryArabicShelf } from "../lib/echo/providers/openlibrary";
 
 function assert(cond: unknown, msg: string): void {
   if (!cond) {

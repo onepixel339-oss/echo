@@ -9,8 +9,8 @@
  *  - AniList's standard genre set, Open Library SUBJECT_ALIASES values
  */
 
-import { normalizeGenre } from "../src/lib/echo/providers/types";
-import { GENRES, TAGS } from "../src/lib/echo/data/vocab";
+import { normalizeGenre } from "../lib/echo/providers/types";
+import { GENRES, TAGS } from "../lib/echo/data/vocab";
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url);

@@ -3,9 +3,9 @@
  * and RAWG (games — live out of the box via the built-in project key).
  * Run: bun scripts/test-expanded-providers.ts
  */
-import { OpenLibraryProvider, openLibrarySubject, openLibraryTrending } from "../src/lib/echo/providers/openlibrary";
-import { RawgProvider, rawgByGenre, rawgKeyConfigured } from "../src/lib/echo/providers/rawg";
-import { searchCatalogue, fetchCandidatePool } from "../src/lib/echo/providers";
+import { OpenLibraryProvider, openLibrarySubject, openLibraryTrending } from "../lib/echo/providers/openlibrary";
+import { RawgProvider, rawgByGenre, rawgKeyConfigured } from "../lib/echo/providers/rawg";
+import { searchCatalogue, fetchCandidatePool } from "../lib/echo/providers";
 
 function assert(cond: unknown, msg: string): void {
   if (!cond) {

@@ -3,11 +3,11 @@
  * Run: npx tsx scripts/test-coming-soon.ts
  */
 
-import { rawgUpcoming, rawgByGenre } from "../src/lib/echo/providers/rawg";
-import { AniListProvider } from "../src/lib/echo/providers/anilist";
-import { fetchComingSoon } from "../src/lib/echo/providers/index";
-import { buildWeeklyDigest, weekKeyOf } from "../src/lib/echo/ai/weekly";
-import type { MediaItem, UserMediaEntry } from "../src/lib/echo/types";
+import { rawgUpcoming, rawgByGenre } from "../lib/echo/providers/rawg";
+import { AniListProvider } from "../lib/echo/providers/anilist";
+import { fetchComingSoon } from "../lib/echo/providers/index";
+import { buildWeeklyDigest, weekKeyOf } from "../lib/echo/ai/weekly";
+import type { MediaItem, UserMediaEntry } from "../lib/echo/types";
 
 async function main(): Promise<void> {
   const today = new Date().toISOString().slice(0, 10);

@@ -1,5 +1,5 @@
-import { DEMO_CATALOGUE } from "../src/lib/echo/data/demoCatalogue";
-import { CURATED_LINKS } from "../src/lib/echo/data/curatedLinks";
+import { DEMO_CATALOGUE } from "../lib/echo/data/demoCatalogue";
+import { CURATED_LINKS } from "../lib/echo/data/curatedLinks";
 const byType: Record<string, {curated: number; demo: number}> = {};
 for (const s of DEMO_CATALOGUE) {
   byType[s.mediaType] = byType[s.mediaType] ?? {curated: 0, demo: 0};

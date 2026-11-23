@@ -8,7 +8,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { POST } from "../src/app/api/echo/translate/route";
+import { POST } from "../app/api/echo/translate/route";
 
 function req(texts: unknown): NextRequest {
   return new NextRequest("http://localhost:3000/api/echo/translate", {

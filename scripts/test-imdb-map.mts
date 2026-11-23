@@ -1,4 +1,4 @@
-import { ImdbProvider } from "../src/lib/echo/providers/imdb";
+import { ImdbProvider } from "../lib/echo/providers/imdb";
 async function main() {
   const p = new ImdbProvider();
   const t = Date.now();

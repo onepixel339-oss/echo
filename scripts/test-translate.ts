@@ -3,7 +3,7 @@
  * Run: npx tsx scripts/test-translate.ts
  */
 
-import { translateToArabic, needsArabic } from "../src/lib/echo/server/translate";
+import { translateToArabic, needsArabic } from "../lib/echo/server/translate";
 
 async function main(): Promise<void> {
   const samples = [
