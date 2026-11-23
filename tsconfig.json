@@ -25,7 +25,7 @@
     ],
     "paths": {
       "@/*": [
-        "./src/*"
+        "./*"
       ]
     }
   },
@@ -38,7 +38,7 @@
   ],
   "exclude": [
     "node_modules",
-    "src/lib/echo/__tests__",
+    "lib/echo/__tests__",
     "examples",
     "skills",
     "scripts",
