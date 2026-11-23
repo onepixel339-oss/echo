@@ -93,46 +93,45 @@ attributed public APIs above.
 ## Architecture
 
 ```
-src/
-  app/                     # Next.js shell (single route), self-hosted fonts, global styles
-  lib/echo/
-    types.ts               # normalized domain model (spec §11)
-    localdb.ts             # IndexedDB layer (no dependencies)
-    store.ts               # zustand store + write-through persistence + sample-map mode
-    i18n.tsx               # EN/AR dictionaries, RTL, singular/plural handling
-    exportimport.ts        # versioned backup validation (zod) + merge/replace
-    poster.ts              # deterministic generated artwork (paper/ink style)
-    ids.ts                 # hashing + seeded RNG (determinism)
-    data/
-      demoCatalogue.ts     # 64-title labelled offline sample catalogue
-      vocab.ts             # genre/tag vocabulary (EN/AR) + provider slug mapping
-    engine/                # pure, deterministic, unit-tested
-      features.ts          # feature extraction + IDF
-      similarity.ts        # weighted overlap, missing-field renormalization, reasons
-      taste.ts             # taste profile from real signals, confidence tiers
-      recommend.ts         # closest / because / adjacent / explore / island shelves
-      cluster.ts           # label-propagation islands, named from shared metadata
-      layout.ts            # island-surveyor layout: circle-packed island centroids,
-                           #   ellipse collision (2r×3r tiles), adaptive spacing,
-                           #   rigid shape preservation, convex-hull outlines
-      identityCard.ts      # shareable taste identity card (distilled fingerprint)
-    ai/                    # AI features (same-origin routes, graceful degradation)
-      llm.ts               # provider chain: Gemini (env key, e.g. on Vercel) → platform AI
-      ask.ts / companion.ts# client halves of Ask ECHO + Taste Companion
-    providers/             # real catalogue sources + offline fallback
-      anilist.ts           # anime + manga (GraphQL search, genre pools, publishing-now)
-      tvmaze.ts            # series
-      imdb.ts              # movies & series (IMDb suggestions + Cinemeta meta & catalogues)
-      kitsu.ts             # anime (JSON:API: search, trending, categories)
-      rawg.ts              # games (env-provided key only: search, details, pools)
-      registry.ts          # provider registry + default-deny license gate
-      provenance.ts        # v2 catalog provenance stamping shared by adapters
-      openlibrary.ts       # books (keyless: search, works, subject shelves, trending)
-      wikidata.ts          # ALL categories (CC0: search, details, universal id hub)
-      match.ts             # evidence-based identity resolution (no substring auto-links)
-      index.ts             # router: gated multi-source search, pools, refresh
-      demo.ts              # labelled offline fallback
-  components/echo/         # app shell, onboarding, map canvas, screens, drawer, dialog
+app/                     # Next.js shell (single route), self-hosted fonts, global styles
+lib/echo/
+  types.ts               # normalized domain model (spec §11)
+  localdb.ts             # IndexedDB layer (no dependencies)
+  store.ts               # zustand store + write-through persistence + sample-map mode
+  i18n.tsx               # EN/AR dictionaries, RTL, singular/plural handling
+  exportimport.ts        # versioned backup validation (zod) + merge/replace
+  poster.ts              # deterministic generated artwork (paper/ink style)
+  ids.ts                 # hashing + seeded RNG (determinism)
+  data/
+    demoCatalogue.ts     # 64-title labelled offline sample catalogue
+    vocab.ts             # genre/tag vocabulary (EN/AR) + provider slug mapping
+  engine/                # pure, deterministic, unit-tested
+    features.ts          # feature extraction + IDF
+    similarity.ts        # weighted overlap, missing-field renormalization, reasons
+    taste.ts             # taste profile from real signals, confidence tiers
+    recommend.ts         # closest / because / adjacent / explore / island shelves
+    cluster.ts           # label-propagation islands, named from shared metadata
+    layout.ts            # island-surveyor layout: circle-packed island centroids,
+                         #   ellipse collision (2r×3r tiles), adaptive spacing,
+                         #   rigid shape preservation, convex-hull outlines
+    identityCard.ts      # shareable taste identity card (distilled fingerprint)
+  ai/                    # AI features (same-origin routes, graceful degradation)
+    llm.ts               # provider chain: Gemini (env key, e.g. on Vercel) → platform AI
+    ask.ts / companion.ts# client halves of Ask ECHO + Taste Companion
+  providers/             # real catalogue sources + offline fallback
+    anilist.ts           # anime + manga (GraphQL search, genre pools, publishing-now)
+    tvmaze.ts            # series
+    imdb.ts              # movies & series (IMDb suggestions + Cinemeta meta & catalogues)
+    kitsu.ts             # anime (JSON:API: search, trending, categories)
+    rawg.ts              # games (env-provided key only: search, details, pools)
+    registry.ts          # provider registry + default-deny license gate
+    provenance.ts        # v2 catalog provenance stamping shared by adapters
+    openlibrary.ts       # books (keyless: search, works, subject shelves, trending)
+    wikidata.ts          # ALL categories (CC0: search, details, universal id hub)
+    match.ts             # evidence-based identity resolution (no substring auto-links)
+    index.ts             # router: gated multi-source search, pools, refresh
+    demo.ts              # labelled offline fallback
+components/echo/         # app shell, onboarding, map canvas, screens, drawer, dialog
 docs/DATA_PROVIDER_COMPLIANCE.md
 ```
 

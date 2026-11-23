@@ -1,6 +1,6 @@
 /**
  * ECHO — Provider registry & license-gate tests.
- * Pure logic, no network. Run: bun test src/lib/echo/__tests__
+ * Pure logic, no network. Run: bun test lib/echo/__tests__
  *
  * Phase 1 requirements covered:
  *  - DEFAULT-DENY: unknown providers are never enabled
@@ -226,10 +226,10 @@ describe("localId prefix → gate mapping", () => {
 
 describe("RAWG embedded key removal", () => {
   test("no API key literal ships in the RAWG adapter source", async () => {
-    const source = await Bun.file("src/lib/echo/providers/rawg.ts").text();
+    const source = await Bun.file(new URL("../providers/rawg.ts", import.meta.url)).text();
     // the previously embedded 32-hex-char key must not appear anywhere
     expect(source).not.toContain("891771e3867e44fba54f16d4b411b1b3");
     // and no other hardcoded 32-hex token is present either
-    expect(/[\"']([0-9a-f]{32})[\"']/.test(source)).toBe(false);
+    expect(/["']([0-9a-f]{32})["']/.test(source)).toBe(false);
   });
 });
