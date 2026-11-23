@@ -1,51 +1,18 @@
-# ECHO — ذوقك، مرسومًا على خريطة
+# ECHO — Your taste, mapped.
 
-**Your taste, mapped.**
-
-ECHO تطبيق ويب **محلي بالكامل** (local-first) بيرسم خريطة ذوقك في الأنمي والأفلام والمسلسلات والألعاب والكتب — من غير حسابات، ولا تتبّع، ولا أي تكلفة تشغيل. بيانات الكتالوج حقيقية من ست مصادر عامة مجانية، وكل حاجة بتتخزن في متصفحك.
-
-- بدون حسابات ولا تسجيل دخول
-- بدون قاعدة بيانات ولا خادم خاص
-- بدون مفاتيح مدفوعة — يعمل كما هو فور النشر
-- واجهة ثنائية اللغة (عربي/إنجليزي) بدعم RTL كامل
-- PWA يعمل أوفلاين مع مكتبتك
-
----
-
-A local-first atlas of your taste. Add the anime, movies, series, games and
-books you enjoy, and ECHO charts them into one explorable map — islands of
+A local-first atlas of your taste. Add the anime, manga, movies, series,
+games, comics and books you enjoy, and ECHO charts them into one explorable map — islands of
 genres, connections between stories, and recommendations that explain
 themselves. **Real catalogue data, no accounts, no setup, no paid AI.**
-
-## Deploy to Vercel (free)
-
-The app needs **zero configuration** to deploy:
-
-1. Push this repository to GitHub.
-2. On [vercel.com](https://vercel.com) → **Add New… → Project** → import the repo.
-3. Vercel auto-detects Next.js (Node 20.9+). Leave every field at its default.
-4. *(Optional)* → **Environment Variables** → add `GEMINI_API_KEY` with a
-   free key from [Google AI Studio](https://aistudio.google.com/apikey) to
-   upgrade the AI features (Ask ECHO, Taste Companion, weekly digest) to
-   Gemini — faster and higher quality. They already work keylessly through
-   a free community provider; the key is a quality upgrade, not a
-   requirement. (Synopsis translation is always keyless.)
-5. **Deploy.**
-
-That is the entire process. No database, no paid services, no other keys —
-the games source (RAWG) ships with a built-in project key and every other
-catalogue source is keyless and public.
-
-> Local preview: `npm install && npm run dev` → http://localhost:3000
 
 ## What is implemented
 
 | Area | Status |
 | --- | --- |
 | First-run onboarding (welcome → interests → seed taste → first map reveal) | ✅ skippable at every non-essential step |
-| Interest selection (anime / manga / movies / series / games / books / comics) | ✅ |
-| Taste seeding: live catalogue search with ratings + favourites **or** quick preference cards | ✅ real results from AniList · Kitsu · TVMaze · IMDb · RAWG · Open Library |
-| **Category-aware search & add** — 8 category pills (All · Anime · Manga · Movies · TV · Games · Books · Comics) scope the query; results never mix types; every result carries year, community score, rating and source | ✅ AniList + Kitsu (anime & manga) · TVMaze + IMDb (series) · IMDb + Cinemeta (movies) · RAWG (games, built-in key) · Open Library (books & comics) |
+| Interest selection (anime / movies / series / games / books / manga / comics) | ✅ |
+| Taste seeding: live catalogue search with ratings + favourites **or** quick preference cards | ✅ real results from the enabled providers (see the provider registry) |
+| Catalogue search & add — **real sources**, every result labelled with its source | ✅ license-gated per provider: AniList (anime + manga) · TVMaze (series) · Open Library (books) · **Wikidata (all seven categories, CC0)** on by default; IMDb/Cinemeta off by default (user-toggleable); Kitsu disabled pending verification; RAWG needs a deployment key |
 | Offline resilience: labelled sample catalogue fallback when the network is down | ✅ |
 | Manual title entry fallback — **auto-linked to the catalogue**: a confident match (same normalized title + compatible year + type) adopts the real record, so even manual entries get a real poster on the map; a manual "Attach real artwork" picker exists in the drawer | ✅ |
 | Library: statuses, 1–5 ratings, favourites, notes, user tags, search/sort/filter, bulk status, remove | ✅ |
@@ -53,7 +20,7 @@ catalogue source is keyless and public.
 | Edge explanations ("why are these two connected?") with real shared features | ✅ |
 | Details drawer: metadata, source attribution + canonical link, status/rating/favourite/note/tags, "why it connects to your taste", similar titles | ✅ |
 | Library ↔ sources: per-row source chip + external link, **Sync from sources** refreshes every title's metadata (posters, genres, synopsis) and links manual entries | ✅ |
-| Discover — **two layers, whole catalogue**: (1) curated sections from day one, no ratings needed — All-time favourites · Iconic classics · Popular now · Critically acclaimed · Hidden gems, built from real charts (AniList popularity/scores, IMDb top lists, RAWG most-added & Metacritic, Open Library most-read shelves), globally deduped so nothing repeats; (2) personal explainable shelves (Made for your taste / Because you liked X / A different direction / Explore this island / Explore something new) with familiar↔surprising dial; plus an "explore a genre" chip row that pulls live genre pools across your types | ✅ |
+| Discover: **live candidate pools** (AniList genre queries + Cinemeta genre & top-rated catalogues + RAWG genre/tag pools + Open Library subject shelves & weekly trending — each behind the license gate) → 4 shelves (Made for your taste / Because you liked X / A different direction / Explore this island), familiar↔surprising dial, media-type-balanced shelves, every card explains itself, feedback actions | ✅ |
 | Taste DNA: confidence tiers, insight cards with sample counts, feature bars, rating distribution, most-influential titles | ✅ |
 | Taste identity card — a shareable card distilled from your taste fingerprint | ✅ |
 | Ask ECHO — conversational search across every medium (intent routing → real catalogue results → grounded narration), plus library & AI-knowledge answers | ✅ |
@@ -62,32 +29,51 @@ catalogue source is keyless and public.
 | Local persistence: IndexedDB (library, ratings, notes, feedback, settings, map layout) | ✅ survives refresh & restart |
 | Export / import: versioned JSON, schema-validated (zod), merge or replace | ✅ |
 | Sample map mode: clearly-labelled, isolated stores, exit with or without keeping titles | ✅ |
-| Bilingual UI: English + Arabic with full RTL, proper Arabic typography | ✅ |
+| Bilingual UI: English + Arabic with full RTL, proper Arabic typography (IBM Plex Sans Arabic) | ✅ |
 | PWA: manifest, generated icons, service worker (network-first) | ✅ opens offline with your library |
 | Privacy: no accounts, no analytics, no trackers; provider calls only when you search | ✅ |
 
-## Design language
+## Design language — "The Paper Atlas"
 
-ECHO looks like a printed survey map, not a generic dark app: warm paper and
-ink with a single vermilion accent (light) / warm charcoal and cream (dark),
-atlas tints for islands and statuses, a self-hosted variable font stack
-(Space Grotesk + Alexandria), hairline borders, stamp-like source chips, a
-faint graticule, curved tapered connection lines, a compass rose and a proper
-legend. No glassmorphism, no gradients, no glow, no runtime CDN fetches.
+ECHO looks like a printed survey map, not a generic dark app:
+
+- **Palette** — warm paper (`#f5f1e6`) with ink text and a single vermilion
+  accent in light mode; warm charcoal + cream in dark mode. Muted atlas tints
+  (verdigris, ochre, plum, pine) for islands, statuses and charts.
+- **Typography** — Fraunces (display serif) for headlines, wordmark and map
+  labels; Instrument Sans for UI; IBM Plex Sans Arabic for Arabic. All
+  self-hosted via `next/font/local` (no runtime CDN).
+- **The map sheet** — a faint graticule, dashed island hulls padded around
+  their members, letterpress small-caps island labels, curved tapered
+  connection lines, a compass rose, and a proper legend.
+- **Icons, chips and rules** — hairline borders, stamp-like source chips,
+  overline section labels. No glassmorphism, no gradients, no glow.
 
 ## Real data sources (all attributed)
 
+Search is **federated and live**: each of the seven categories routes to its
+own most relevant sources, providers answer in parallel, results stream in
+progressively as each source responds, and every result keeps its source
+chips. ECHO never copies a provider's catalogue — results stay transient.
+
 | Source | Serves | Notes |
 | --- | --- | --- |
-| [AniList](https://anilist.co/) | Anime **and manga** | Public GraphQL API; genres, community tags, studios, artwork, popularity & score rankings |
-| [Kitsu](https://kitsu.app/) | Anime **and manga** (light novels excluded) | Public JSON:API; categories, artwork, trending pools |
-| [TVMaze](https://www.tvmaze.com/) | Series | Free public API; genres, ratings, artwork |
-| IMDb suggestions + [Cinemeta](https://github.com/Stremio/) | Movies **and series** (+ genre/top-rated pools and deep top lists for era filtering) | Public endpoints; genres, cast, director, artwork via metahub |
-| [RAWG](https://rawg.io/) | Games (+ genre/tag pools, era windows, Metacritic rankings) | Free API with a **built-in project key** — games work with zero setup |
-| [Open Library](https://openlibrary.org/) | Books **and comics** (graphic-novel canon, era windows, weekly trending) | Internet Archive's open catalogue; keyless, CORS-enabled |
+| [AniList](https://anilist.co/) | Anime + Manga | Public GraphQL API; genres, community tags, studios, artwork |
+| [TVMaze](https://www.tvmaze.com/) | Series | Free public API (CC BY-SA, attributed); genres, ratings, artwork |
+| [Trakt](https://trakt.tv/) | Movies & Series | API Use Policy permits discovery apps; needs `TRAKT_CLIENT_ID` + `NEXT_PUBLIC_TRAKT_ENABLED=1` from the deployment (server proxy) |
+| [MADB](https://mediaarts-db.artmuseums.go.jp/) | Manga & Anime | Japan's official Media Arts Database SPARQL service; series-level records, volume counts, romanized titles |
+| [BnF](https://catalogue.bnf.fr/) | Books & Comics (FR) | Catalogue général SRU, Licence ouverte (Etalab 2.0); bibliographic editions |
+| [Inventaire](https://inventaire.io/) | Books | Open book-catalogue API; Wikidata-mirrored work entities |
+| [Wikidata](https://www.wikidata.org/) | All seven categories (CC0 baseline) | Universal live baseline for categories without a specialized source |
+| [Open Library](https://openlibrary.org/) | Books | Internet Archive's open catalogue; keyless, CORS-enabled |
+| [IGDB](https://www.igdb.com/) | Games | Twitch OAuth2 (server proxy); needs `IGDB_CLIENT_ID`/`IGDB_CLIENT_SECRET` + `NEXT_PUBLIC_IGDB_ENABLED=1` |
+| [RAWG](https://rawg.io/) | Games | Free API — **no key ships in client code**; deployments provide `NEXT_PUBLIC_RAWG_API_KEY` |
+| IMDb suggestions + [Cinemeta](https://github.com/Stremio/) | Movies **and series** | Disabled by default (terms unverified); user-toggleable in Settings |
+| [Kitsu](https://kitsu.app/) | Anime | Disabled pending data-use verification (registry-hard-gated) |
 
 Every search result carries a source chip; every title's drawer links back to
-its canonical page; Settings → Data sources lists all of them. When you're
+its canonical page; Settings → Data sources lists all of them with their
+license status and an on/off switch (default-deny registry gate). When you're
 offline, search falls back to the labelled sample catalogue. See
 `docs/DATA_PROVIDER_COMPLIANCE.md` for the full compliance table.
 
@@ -109,11 +95,8 @@ attributed public APIs above.
 ```
 src/
   app/                     # Next.js shell (single route), self-hosted fonts, global styles
-    api/echo/              # same-origin server routes
-      ai/ask|companion|weekly   # AI features (Gemini first, maxDuration 60s)
-      translate/           # synopsis translation
   lib/echo/
-    types.ts               # normalized domain model
+    types.ts               # normalized domain model (spec §11)
     localdb.ts             # IndexedDB layer (no dependencies)
     store.ts               # zustand store + write-through persistence + sample-map mode
     i18n.tsx               # EN/AR dictionaries, RTL, singular/plural handling
@@ -129,28 +112,28 @@ src/
       taste.ts             # taste profile from real signals, confidence tiers
       recommend.ts         # closest / because / adjacent / explore / island shelves
       cluster.ts           # label-propagation islands, named from shared metadata
-      layout.ts            # island-surveyor layout
-      identityCard.ts      # shareable taste identity card
+      layout.ts            # island-surveyor layout: circle-packed island centroids,
+                           #   ellipse collision (2r×3r tiles), adaptive spacing,
+                           #   rigid shape preservation, convex-hull outlines
+      identityCard.ts      # shareable taste identity card (distilled fingerprint)
     ai/                    # AI features (same-origin routes, graceful degradation)
-      llm.ts               # provider chain: Gemini (env key) → platform AI → keyless Pollinations
-      ask.ts / companion.ts / weekly.ts   # client halves
+      llm.ts               # provider chain: Gemini (env key, e.g. on Vercel) → platform AI
+      ask.ts / companion.ts# client halves of Ask ECHO + Taste Companion
     providers/             # real catalogue sources + offline fallback
-      anilist.ts           # anime (GraphQL search, genre pools)
+      anilist.ts           # anime + manga (GraphQL search, genre pools, publishing-now)
       tvmaze.ts            # series
       imdb.ts              # movies & series (IMDb suggestions + Cinemeta meta & catalogues)
       kitsu.ts             # anime (JSON:API: search, trending, categories)
-      rawg.ts              # games (built-in key: search, details, genre/tag pools)
+      rawg.ts              # games (env-provided key only: search, details, pools)
+      registry.ts          # provider registry + default-deny license gate
+      provenance.ts        # v2 catalog provenance stamping shared by adapters
       openlibrary.ts       # books (keyless: search, works, subject shelves, trending)
-      match.ts             # manual-title → catalogue matching
-      index.ts             # router: multi-source search, candidate pools, refresh
+      wikidata.ts          # ALL categories (CC0: search, details, universal id hub)
+      match.ts             # evidence-based identity resolution (no substring auto-links)
+      index.ts             # router: gated multi-source search, pools, refresh
       demo.ts              # labelled offline fallback
-    server/kv.ts           # optional Upstash Redis swap point (env-driven, off by default)
-  components/echo/         # app shell, onboarding, map canvas, screens, drawer, dialogs
-  components/ui/           # the shadcn/ui subset actually used
-docs/
-  DATA_PROVIDER_COMPLIANCE.md
-scripts/
-  test-expanded-providers.ts   # live smoke test: RAWG + Open Library + pools
+  components/echo/         # app shell, onboarding, map canvas, screens, drawer, dialog
+docs/DATA_PROVIDER_COMPLIANCE.md
 ```
 
 ## Engines in one paragraph each
@@ -167,9 +150,9 @@ scripts/
   IDF-weighted matches over a **live candidate pool** (AniList + Kitsu genre
   queries, Kitsu trending, Cinemeta genre & top-rated catalogues, RAWG
   genre/tag pools, Open Library subject shelves + weekly trending —
-  interleaved so no single source dominates); shelves for closest /
-  because-you-liked / adjacent / island neighbours; franchise and first-genre
-  diversity caps; rejected titles never return.
+  interleaved so no single source dominates);
+  shelves for closest / because-you-liked / adjacent / island neighbours;
+  franchise and first-genre diversity caps; rejected titles never return.
 - **Layout (island surveyor)** — clusters become landmasses: centroids are
   circle-packed with inter-island gaps, nodes relax inside their island with
   ellipse-aware collision (poster tiles are 2r × 3r), cross-island pairs
@@ -177,62 +160,58 @@ scripts/
   (rigid offsets + capped centroid drift). Islands render as padded convex
   hulls with letterpress labels that dodge nodes and labels.
 
-## Run locally
+## Run
 
 ```bash
-npm install
-npm run dev        # http://localhost:3000
-npm run lint       # eslint
-npm test           # 22 domain unit tests (requires bun: https://bun.sh)
-npm run smoke      # live smoke test: RAWG + Open Library + candidate pools (requires bun)
+bun install
+bun run dev        # http://localhost:3000
+bun run lint       # eslint
+bun run test       # domain unit tests (registry gate, migration, identity, export/import)
+# live provider smoke tests are NOT run automatically — they need explicit authorization
 ```
 
-No environment configuration is required: every catalogue source — games
-included, via the built-in RAWG key — works out of the box, and the AI
-features run on a free keyless community provider (Pollinations) with no
-setup at all. To upgrade them to Gemini, copy `.env.example` to `.env.local`
-and set `GEMINI_API_KEY` (free key: https://aistudio.google.com/apikey).
-If every provider fails, AI features degrade gracefully and the rest of the
-app is unaffected.
-
-## Environment variables (all optional)
-
-| Variable | Purpose |
-| --- | --- |
-| `GEMINI_API_KEY` | Optional quality upgrade for Ask ECHO / Taste Companion / weekly digest: free Google AI Studio key → Gemini runs first in the provider chain (keyless community AI is the zero-config default) |
-| `GEMINI_MODEL` | Pin one Gemini model instead of the free chain (gemini-3.8-flash → gemini-3.5-flash-lite) |
-| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Growth swap point for shared rate-limit/cache across serverless instances — see `src/lib/echo/server/kv.ts` |
+Optional configuration: set `NEXT_PUBLIC_RAWG_API_KEY` to enable the games
+catalogue (no key ships in client code). Anime, series and books work out of
+the box via the enabled providers; inside this sandbox the AI features use
+the platform AI automatically. On an external
+deploy (e.g. Vercel) set `GEMINI_API_KEY` (free key:
+https://aistudio.google.com/apikey) to enable the AI features; see
+`.env.example` for every optional variable.
 
 ## Tests
 
-22 domain unit tests cover: unrated titles create no positive signal, 5★ > 4★
-evidence, low ratings are negative evidence, missing metadata isn't punished,
-explanations match actually-shared features, common genres don't
-over-connect, filters and rejections are respected, library titles aren't
-re-recommended, low samples → low confidence, deterministic ranking, cluster
-naming, layout determinism and layout stability on additions (≤ 60px drift).
+The domain unit tests cover the spec's domain test plan plus the Phase 1
+safety suite (license gate default-deny, provider enable/disable, storage
+restrictions, IndexedDB migration + rollback, export/import compatibility,
+identity matching with conflict fixtures, rating provenance, search routing
+and provider failures): unrated titles create
+no positive signal, 5★ > 4★ evidence, low ratings are negative evidence,
+missing metadata isn't punished, explanations match actually-shared features,
+common genres don't over-connect, filters and rejections are respected,
+library titles aren't re-recommended, low samples → low confidence,
+deterministic ranking, cluster naming, layout determinism and layout
+stability on additions (≤ 60px drift).
+
+End-to-end flows (onboarding → first map, live search from all six catalogue
+sources, rating updates the map, edge explanation, feedback loops, offline
+fallback, RTL, dark/light themes) were verified in a real browser during
+development.
 
 ## Known limitations
 
-- Games run on a shared built-in RAWG key (free tier: ~20k requests/month
-  across all users).
-- The keyless AI fallback (Pollinations) is a shared free community service:
-  slower and rate-limited. Set `GEMINI_API_KEY` for the best experience;
-  if every provider fails the AI features degrade gracefully.
+- Games need a deployment-provided RAWG key (`NEXT_PUBLIC_RAWG_API_KEY`);
+  without it the games catalogue is gracefully unavailable. Commercial use
+  of RAWG data is pending terms confirmation.
+- On external deploys, the AI features (Ask ECHO, Taste Companion) need a
+  `GEMINI_API_KEY` env var; without it they degrade gracefully and the rest
+  of the app is unaffected.
 - Cinemeta does not provide per-region certifications; movie maturity data is
   coarse (adult content is filtered, everything else shows as unrated).
+- Metadata refresh re-fetches by stored provider id after an online session;
+  the sample catalogue needs no refresh.
 - Import/export covers library, feedback and non-secret settings; provider
   artwork URLs are excluded by design.
 - The map is optimised for personal libraries (up to a few hundred titles).
-- Comic coverage comes from Open Library's graphic-novel subjects: major
-  graphic novels are well covered, but current monthly floppy issues and some
-  publisher back-catalogues are spotty.
-- Books and comics have no rating source, so they appear in the All-time /
-  Classics / Popular sections (via most-read and edition-count charts) but not
-  in Critically acclaimed; movies and series have no keyless "trending now"
-  source, so they live in All-time / Classics / Acclaimed instead of Popular.
-- Open Library's subject taxonomy is messy: the adapters filter cataloguing
-  noise and multi-volume duplicates, but occasional oddities still surface.
 
 ## Privacy summary
 
