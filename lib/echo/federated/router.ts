@@ -177,6 +177,13 @@ export interface ResolvedProviderJob {
   categories: MediaType[];
   /** provider-specific search invocation (e.g. AniList's manga path) */
   run: (query: string, filters: SearchFilters) => Promise<{ item: import("../types").MediaItem }[]>;
+  /** engine identity for this job — defaults to `${registryId}:${provider.id}`.
+   *  MUST be set when one provider serves the same categories through
+   *  MULTIPLE jobs (AniList anime + manga): without it the jobs collide
+   *  in the engine's state/liveInput maps and one silently overwrites
+   *  the other (found by the A1 e2e suite: anime results vanished from
+   *  "All" searches). */
+  key?: string;
 }
 
 /** Cooldown bookkeeping shared with the engine. */
@@ -234,6 +241,10 @@ export function resolveProviderJobs(
       anilistJob.categories = ["anime"];
       jobs.set("anilist:anilist-manga", {
         ...anilistJob,
+        // distinct engine identity — without it the manga job overwrote the
+        // anime job's state and live results under the shared
+        // `anilist:anilist` key (A1 e2e regression)
+        key: "anilist:anilist-manga",
         categories: ["manga"],
         run: (query, filters) =>
           (anilistProvider as AniListProvider)
