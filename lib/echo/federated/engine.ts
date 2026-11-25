@@ -33,11 +33,11 @@ import type {
 } from "./types";
 
 /** All seven categories, in display order (no providers/index import here —
- *  that module re-exports the router and would create a cycle). */
+ * that module re-exports the router and would create a cycle). */
 const ALL_MEDIA_TYPES: MediaType[] = MEDIA_TYPES;
 
 /** The local catalogue instance used by the engine (approved ECHO content:
- *  demo universe + curated collections; in-memory search, no network). */
+ * demo universe + curated collections; in-memory search, no network). */
 const demoProvider = new DemoProvider();
 
 /* ------------------------------ rate limits ------------------------------ */
@@ -132,7 +132,7 @@ function interleaveByProvider(hits: FederatedHit[]): FederatedHit[] {
 /* ------------------------------ local fill ------------------------------ */
 
 /** Local labelled fill for categories with no live coverage (approved ECHO
- *  content only — demo universe, curated collections, catalog shards). */
+ * content only — demo universe, curated collections, catalog shards). */
 async function localFill(
   query: string,
   categories: MediaType[],
@@ -416,7 +416,9 @@ export function createFederatedSearch(
 }
 
 function jobKey(job: ResolvedProviderJob): string {
-  return `${job.registryId}:${job.provider.id}`;
+  // a job may override its identity when one provider serves the same
+  // categories through multiple jobs (AniList anime + manga) — see router.ts
+  return job.key ?? `${job.registryId}:${job.provider.id}`;
 }
 
 /** Awaitable form without progressive updates (server routes, tests). */
@@ -432,8 +434,8 @@ export async function runFederatedSearch(
 const snapshotCache = new TTLCache<FederatedSnapshot>(5 * 60_000);
 
 /** Cached search used by the legacy searchCatalogue API: identical queries
- *  within 5 minutes share one upstream call set. Only non-empty, fully-live
- *  snapshots are cached (offline/local-only results are never cached). */
+ * within 5 minutes share one upstream call set. Only non-empty, fully-live
+ * snapshots are cached (offline/local-only results are never cached). */
 export async function searchFederatedCached(
   query: string,
   options: FederatedSearchOptions = {},
