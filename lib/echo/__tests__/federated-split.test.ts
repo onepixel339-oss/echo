@@ -13,7 +13,6 @@
 
 import "fake-indexeddb/auto";
 import { describe, expect, test } from "bun:test";
-import type { MediaItem } from "../types";
 import { runFederatedSearch } from "../federated/engine";
 
 describe("AniList anime + manga job split (jobKey collision regression)", () => {
