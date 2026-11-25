@@ -45,6 +45,30 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     "no-useless-escape": "off",
   },
 }, {
+  // ---- A1 quality gate: the domain core (lib/echo) is held to a stricter
+  // rule family than the rest of the repo — no console noise, no accidental
+  // reassignment, no loose equality, no dead variables. Existing app code
+  // outside lib/echo keeps its historical leniency (widening it is not a
+  // Phase 1 goal).
+  files: ["lib/echo/**"],
+  rules: {
+    "no-console": "error",
+    "prefer-const": "error",
+    "eqeqeq": ["error", "smart"],
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": ["error", {
+      argsIgnorePattern: "^_",
+      varsIgnorePattern: "^_",
+      caughtErrorsIgnorePattern: "^_",
+    }],
+  },
+}, {
+  // allow deliberate console use in the dev/test entry points INSIDE lib/echo
+  files: ["lib/echo/__tests__/**"],
+  rules: {
+    "no-console": "off",
+  },
+}, {
   ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills", "work/**", "download/**", "scripts/**"]
 }];
 
