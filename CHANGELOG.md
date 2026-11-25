@@ -16,6 +16,15 @@ targeted, with regression tests.
 
 ### Fixed
 
+- **AniList anime results vanished from "All" searches (found by the A1 e2e
+  suite).** The federated router splits AniList into an anime job and a manga
+  job when a search covers both categories, but the engine identified jobs
+  by `registryId:providerId` — both AniList jobs computed the same key, so
+  the manga job's state and results silently overwrote the anime job's.
+  Every "All"-tab search (the default in the Add dialog and onboarding)
+  showed zero live anime results. Jobs now carry an explicit key when one
+  provider serves multiple paths. Regression test: the anime+manga split
+  keeps both provider states and both result sets.
 - **RAWG provenance stamping (audit G4).** RAWG records now carry the uniform
   v2 catalog fields (`workId`, `externalIds.rawg`, field-level `provenance`,
   `providerRef`) like every other adapter — previously they were missing,
