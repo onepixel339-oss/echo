@@ -34,6 +34,19 @@ export type ProviderLicenseStatus =
 
 export type CommercialUseStatus = "permitted" | "prohibited" | "unverified";
 
+/**
+ * Cloud-sync posture (Revision 1.3 §7.3.1) — what may leave the device for
+ * the (future, Track B) sync service, per provider:
+ *  - `full`       complete catalog records may sync (permissive licenses,
+ *                 user-authored content, ECHO's own catalogue)
+ *  - `reference`  sync the user's library reference (provider id + the
+ *                 user's own fields), not full catalog payloads
+ *  - `pointer`    reserved vocabulary, assigned to NO provider today — the
+ *                 documented post-clarification candidate for AniList
+ *  - `none`       nothing derived from this provider is ever uploaded
+ */
+export type CloudSyncPolicy = "full" | "reference" | "pointer" | "none";
+
 export interface StoragePolicy {
   /** May results be kept in the session-only TTL caches? (transient) */
   sessionCache: boolean;
@@ -68,6 +81,10 @@ export interface ProviderRegistryEntry {
   userToggleable: boolean;
   /** Hard gate: cannot be enabled by anyone until re-verified. */
   hardDisabled: boolean;
+  /** Cloud-sync posture (§7.3.1) — what the future sync classifier may
+   *  upload for records derived from this provider. Declarative until
+   *  Track B exists; this registry is the single source of truth it reads. */
+  cloudSyncPolicy: CloudSyncPolicy;
 }
 
 /** Date of the Phase 1 provider review that produced these statuses. */
@@ -81,7 +98,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     operations: ["search", "details", "artwork", "catalogue-pools"],
     licenseStatus: "restricted",
     statusReason:
-      "Interactive use permitted (anime and manga); returned catalog data must NOT be persisted as a catalogue mirror and no bulk collection is allowed.",
+      "Interactive use permitted (anime and manga); returned catalog data must NOT be persisted as a catalogue mirror and no bulk collection is allowed. Cloud sync: local-only until written terms clarification (Revision 1.3 §7.3.1).",
     commercialUse: "unverified",
     storage: { sessionCache: true, persistCatalogData: false, cacheTtlMs: 30 * 60_000 },
     redistribution: false,
@@ -94,6 +111,9 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     defaultEnabled: true,
     userToggleable: true,
     hardDisabled: false,
+    // Nothing AniList-derived is uploaded in any form — no pointer, no
+    // provider id, no user fields attached to AniList-derived records.
+    cloudSyncPolicy: "none",
   },
   kitsu: {
     id: "kitsu",
@@ -112,6 +132,8 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     defaultEnabled: false,
     userToggleable: false,
     hardDisabled: true,
+    // Hard-disabled provider — nothing derived from it exists to sync.
+    cloudSyncPolicy: "none",
   },
   tvmaze: {
     id: "tvmaze",
@@ -133,6 +155,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     defaultEnabled: true,
     userToggleable: true,
     hardDisabled: false,
+    cloudSyncPolicy: "reference",
   },
   imdb: {
     id: "imdb",
@@ -151,6 +174,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     defaultEnabled: false,
     userToggleable: true,
     hardDisabled: false,
+    cloudSyncPolicy: "reference",
   },
   cinemeta: {
     id: "cinemeta",
@@ -169,6 +193,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     defaultEnabled: false,
     userToggleable: true,
     hardDisabled: false,
+    cloudSyncPolicy: "reference",
   },
   rawg: {
     id: "rawg",
@@ -177,16 +202,17 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     operations: ["search", "details", "artwork", "catalogue-pools"],
     licenseStatus: "restricted",
     statusReason:
-      "Keyless use is impossible: no API key ships in client code. A deployment may provide a key via NEXT_PUBLIC_RAWG_API_KEY. Commercial use stays OFF until RAWG's applicable terms are confirmed.",
-    commercialUse: "unverified",
+      "Keyless use is impossible: no API key ships in client code. A deployment may provide a key via NEXT_PUBLIC_RAWG_API_KEY. Commercial use is permitted by RAWG's terms for free products under 100K monthly active users with attribution (verified 2026-11-25, rawg.io/apidocs).",
+    commercialUse: "permitted",
     storage: { sessionCache: true, persistCatalogData: false, cacheTtlMs: 60 * 60_000 },
     redistribution: false,
     attribution: { required: true, notice: "Data from RAWG" },
     termsUrl: "https://rawg.io/apidocs",
-    lastVerified: REVIEW_DATE,
+    lastVerified: "2026-11-25",
     defaultEnabled: true,
     userToggleable: true,
     hardDisabled: false,
+    cloudSyncPolicy: "reference",
   },
   openlib: {
     id: "openlib",
@@ -208,6 +234,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     defaultEnabled: true,
     userToggleable: true,
     hardDisabled: false,
+    cloudSyncPolicy: "reference",
   },
   wikidata: {
     id: "wikidata",
@@ -229,6 +256,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     defaultEnabled: true,
     userToggleable: true,
     hardDisabled: false,
+    cloudSyncPolicy: "full",
   },
   trakt: {
     id: "trakt",
@@ -250,6 +278,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     defaultEnabled: true,
     userToggleable: true,
     hardDisabled: false,
+    cloudSyncPolicy: "full",
   },
   igdb: {
     id: "igdb",
@@ -271,6 +300,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     defaultEnabled: true,
     userToggleable: true,
     hardDisabled: false,
+    cloudSyncPolicy: "reference",
   },
   madb: {
     id: "madb",
@@ -292,6 +322,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     defaultEnabled: true,
     userToggleable: true,
     hardDisabled: false,
+    cloudSyncPolicy: "reference",
   },
   inventaire: {
     id: "inventaire",
@@ -313,6 +344,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     defaultEnabled: true,
     userToggleable: true,
     hardDisabled: false,
+    cloudSyncPolicy: "reference",
   },
   bnf: {
     id: "bnf",
@@ -334,6 +366,7 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     defaultEnabled: true,
     userToggleable: true,
     hardDisabled: false,
+    cloudSyncPolicy: "full",
   },
   "echo-demo": {
     id: "echo-demo",
@@ -355,11 +388,20 @@ export const PROVIDER_REGISTRY: Record<string, ProviderRegistryEntry> = {
     defaultEnabled: true,
     userToggleable: false,
     hardDisabled: false,
+    cloudSyncPolicy: "full",
   },
 };
 
 /** User-authored records are the user's own data — always allowed. */
 export const MANUAL_PROVIDER_ID = "manual";
+
+/** Cloud-sync policy for a provider id (§7.3.1). Default-deny: unknown ids
+ *  sync nothing. User-authored records are the user's own data — `full`. */
+export function cloudSyncPolicyFor(id: string): CloudSyncPolicy {
+  if (id === MANUAL_PROVIDER_ID) return "full";
+  const entry = PROVIDER_REGISTRY[id];
+  return entry ? entry.cloudSyncPolicy : "none";
+}
 
 /* --------------------------- the license gate --------------------------- */
 
