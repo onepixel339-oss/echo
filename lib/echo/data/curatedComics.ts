@@ -300,7 +300,7 @@ export const CURATED_COMICS: ComicsSeed[] = [
     synopsis:
       "Born different in a world that fears them, a school of mutants learns to use the powers that guarantee they'll never be left alone.",
     synopsisAr:
-      "مولودون مختلفون في عالم يخافهم، يتعلّم طلاب مدرسة المتحوّلين استخدام القوى التي تضمن ألا يُتركوا في سلام أبداً.",
+      "مولودون مختلفين في عالم يخافهم، يتعلّم طلاب مدرسة المتحوّلين استخدام القوى التي تضمن ألا يُتركوا في سلام أبداً.",
     attribution: CURATED_ATTRIBUTION,
   },
   {
