@@ -34,6 +34,14 @@ const externalIdMapSchema = z
     openlib: z.string().optional(),
     wikidata: z.string().optional(),
     gutenberg: z.string().optional(),
+    // v2 provider namespaces (NF-1: these were silently stripped by zod's
+    // default key-stripping on import — every namespace a provider can
+    // stamp must round-trip through the bundle)
+    madb: z.string().optional(),
+    trakt: z.string().optional(),
+    igdb: z.string().optional(),
+    inventaire: z.string().optional(),
+    bnf: z.string().optional(),
   })
   .optional();
 
@@ -186,6 +194,11 @@ const bundleSchema = z.object({
       recencyWeight: z.boolean().optional(),
       mapLabels: z.boolean().optional(),
       animations: z.boolean().optional(),
+      // v3 settings fields (NF-1: previously stripped on import — a
+      // replace-mode restore silently lost the user's visibility level and
+      // provider toggles)
+      contentVisibility: z.enum(["safe", "moderate", "all"]).optional(),
+      providerToggles: z.record(z.string(), z.boolean()).optional(),
     })
     .optional(),
   entries: z.array(entrySchema),
