@@ -136,7 +136,7 @@ describe("POST /api/echo/translate", () => {
   test("English text is translated via the mocked free upstream", async () => {
     fetchResponder = (url) => {
       if (url.includes("translate.googleapis.com")) {
-        // Google gtx shape: [[[quote+translation+quote... — bracket count three, then two close, comma, three dots, one close
+        // Google gtx shape: [[["]]
         return [[["ترجمة تجريبية", "A test synopsis", null, null, 10]], null, "en"];
       }
       return null;
