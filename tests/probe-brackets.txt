@@ -1,4 +1,0 @@
-SEQ-A: [[["translation","source",...]], ...]
-SEQ-B: [[["ترجمة تجريبية", "x", null]], null, "en"];
-SEQ-C: // Google gtx shape: [[["translation","source",...]], ...]
-SEQ-D: return [[["a", "b", null, null, 10]], null, "en"];
