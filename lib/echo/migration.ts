@@ -65,7 +65,7 @@ export function workRecordOf(item: MediaItem, nowIso: string): WorkRecord {
 
 /** Enrich a v1 media record with the v2 catalog fields. PURE — no I/O.
  *  Returns the SAME reference when nothing needs adding (already migrated). */
-export function enrichMediaItemV2(item: MediaItem, nowIso: string): MediaItem {
+export function enrichMediaItemV2(item: MediaItem, _nowIso?: string): MediaItem {
   if (item.workId) return item; // already migrated — never touch it twice
   const provider = item.provider;
   const workId =
