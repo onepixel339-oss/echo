@@ -16,7 +16,7 @@
  * throttles itself below that and is per-IP rate limited as well.
  */
 
-import type { MediaFormat, MediaItem, MediaType } from "../types";
+import type { MediaFormat, MediaItem } from "../types";
 import { formatForType } from "../types";
 import {
   ProviderError,

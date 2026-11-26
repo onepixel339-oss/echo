@@ -27,7 +27,6 @@ import type { MediaFormat, MediaItem, MediaType } from "../types";
 import { formatForType } from "../types";
 import {
   ProviderError,
-  fetchJson,
   type CatalogueProvider,
   type ProviderSearchResult,
   type SearchFilters,
@@ -276,7 +275,6 @@ LIMIT 1`;
       const data = (await res.json()) as { results?: { bindings?: MadbBinding[] } };
       const row = data.results?.bindings?.[0];
       if (!row) return null;
-      const classShort = (row.classuri?.value ?? "").split("#")[1] ?? "";
       const subtypeOf: Record<string, string | undefined> = {};
       for (const c of [...MANGA_CLASSES, ...ANIME_CLASSES]) subtypeOf[c.cls] = c.subtype;
       return madbRowToItem(row, subtypeOf);
