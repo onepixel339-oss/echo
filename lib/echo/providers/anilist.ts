@@ -16,7 +16,6 @@ import type { MediaFormat, MediaItem, MediaType, PublicationStatus } from "../ty
 import { formatForType } from "../types";
 import {
   ProviderError,
-  fetchJson,
   normalizeGenre,
   parseRetryAfterMs,
   slugifyText,
