@@ -413,3 +413,117 @@ describe("applyBundle against the migrated (v2) database", () => {
     expect((await db.getAllWorks()).length).toBe(0);
   });
 });
+
+/* ------------- NF-1: export round-trip field loss (A0 regression) --------- */
+
+describe("NF-1 — every namespace and setting survives the export round-trip", () => {
+  test("all provider external-id namespaces validate and are NOT stripped (zod key-stripping regression)", () => {
+    const b = v1Bundle() as Record<string, unknown>;
+    b.schemaVersion = 3;
+    b.media = [
+      {
+        ...media({ localId: "tvmaze:169", title: "Breaking Bad" }),
+        externalIds: {
+          imdb: "tt0903747",
+          tvmaze: "169",
+          anilist: "21459",
+          mal: "5114",
+          kitsu: "5114",
+          rawg: "3498",
+          openlib: "OL12345W",
+          wikidata: "Q83495",
+          gutenberg: "1342",
+          madb: "MADB-0001",
+          trakt: "1234",
+          igdb: "1020",
+          inventaire: "inv:wd:Q83495",
+          bnf: "FRBNF123456789",
+        },
+      },
+    ];
+    const parsed = validateBundle(JSON.parse(JSON.stringify(b)));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    // every namespace — including the five that were previously stripped by
+    // zod's default key-stripping — must come back out of the validator
+    expect(parsed.data.media[0].externalIds).toMatchObject({
+      madb: "MADB-0001",
+      trakt: "1234",
+      igdb: "1020",
+      inventaire: "inv:wd:Q83495",
+      bnf: "FRBNF123456789",
+    });
+  });
+
+  test("v3 settings (contentVisibility, providerToggles) validate and survive", () => {
+    const b = v1Bundle() as Record<string, unknown>;
+    b.schemaVersion = 3;
+    b.settings = {
+      language: "ar",
+      contentVisibility: "safe",
+      providerToggles: { imdb: true, cinemeta: false },
+    };
+    const parsed = validateBundle(JSON.parse(JSON.stringify(b)));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.settings?.contentVisibility).toBe("safe");
+    expect(parsed.data.settings?.providerToggles).toEqual({ imdb: true, cinemeta: false });
+  });
+
+  test("v1/v2 bundles without the new fields still import unchanged (backwards compatible)", () => {
+    // no externalIds at all, no v3 settings — the pre-NF-1 shapes
+    const v1 = validateBundle(v1Bundle());
+    expect(v1.ok).toBe(true);
+    if (v1.ok) {
+      expect(v1.data.settings?.contentVisibility).toBeUndefined();
+      expect(v1.data.settings?.providerToggles).toBeUndefined();
+    }
+    const b2 = v1Bundle() as Record<string, unknown>;
+    b2.schemaVersion = 2;
+    expect(validateBundle(b2).ok).toBe(true);
+  });
+
+  test("a full v3 round-trip preserves every namespace in the restored records", async () => {
+    await resetDb();
+    const stamped = media({
+      localId: "trakt:1234",
+      provider: "trakt",
+      providerId: "1234",
+      title: "Arrival",
+      externalIds: { trakt: "1234", imdb: "tt2543164" },
+    });
+    const bundle = buildBundle({
+      settings: { language: "en", contentVisibility: "all", providerToggles: { imdb: true } },
+      media: [stamped],
+      entries: [entry("trakt:1234")],
+      feedback: [],
+    });
+    const parsed = validateBundle(JSON.parse(JSON.stringify(bundle)));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    await applyBundle(parsed.data, "replace", deps());
+    const restored = (await db.getAllMedia()).find((m) => m.localId === "trakt:1234");
+    expect(restored?.externalIds?.trakt).toBe("1234");
+    expect(restored?.externalIds?.imdb).toBe("tt2543164");
+  });
+
+  test("the export side ships what it is given — settings are not dropped by buildBundle", () => {
+    const bundle = buildBundle({
+      settings: {
+        language: "ar",
+        contentVisibility: "safe",
+        providerToggles: { rawg: false },
+        recencyWeight: false,
+      },
+      media: [media({ localId: "tvmaze:169" })],
+      entries: [entry("tvmaze:169")],
+      feedback: [],
+    });
+    expect(bundle.settings).toEqual({
+      language: "ar",
+      contentVisibility: "safe",
+      providerToggles: { rawg: false },
+      recencyWeight: false,
+    });
+  });
+});
