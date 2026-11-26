@@ -24,7 +24,7 @@ import {
   type CatalogShardRecord,
 } from "../catalogShards";
 import * as db from "../localdb";
-import type { MediaItem, MediaType } from "../types";
+import type { MediaType } from "../types";
 
 const realFetch = globalThis.fetch;
 
