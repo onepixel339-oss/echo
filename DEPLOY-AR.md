@@ -50,12 +50,15 @@
 
 | المتغير | الفايدة | ازاي تجيبه |
 |---|---|---|
-| `GEMINI_API_KEY` | يحسّن ميزات AI (Ask ECHO / Companion / weekly digest) | https://aistudio.google.com/apikey (مجاني) |
+| `GEMINI_API_KEY` | يشغّل ميزات AI (Ask ECHO / Companion / weekly digest) — من غيره ميزات الـ AI مقفولة بالتصميم | https://aistudio.google.com/apikey (مجاني) |
 | `GEMINI_MODEL` | تثبّت موديل معين بدل السلسلة الافتراضية | اختياري |
 | `UPSTASH_REDIS_REST_URL` | تخزين مؤقت للطلبات (مش ضروري) | https://upstash.com (مجاني) |
 | `UPSTASH_REDIS_REST_TOKEN` | مع التوكن بتاع Upstash | اختياري |
 
-من غير مفتاح Gemini: ميزات الـ AI بتشتغل على مزوّد مجاني بديل (Pollinations) — يعني مفيش حاجة بيبطل فيها.
+من غير مفتاح Gemini: ميزات الـ AI بترد بحالتها المصممة "غير متاحة"
+(`ai_unavailable`) — وكل حاجة تانية في التطبيق (المكتبة، الخريطة،
+الإحصائيات، التوصيات، التصدير) شغالة زي ما هي. مفيش أي مزوّد AI
+مجاني بيتشحن مع الكود (الوضع الرسمي موثّق في `docs/AI_POSTURE.md`).
 
 ---
 
