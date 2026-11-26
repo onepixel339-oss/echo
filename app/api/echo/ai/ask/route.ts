@@ -10,7 +10,9 @@
  *      client (real engine output, tiny payload).
  *      general → the LLM answers from its own entertainment knowledge; the
  *      client labels it as AI knowledge (no items).
- *   3. Provider chain: platform AI first, Gemini fallback (see lib/echo/ai/llm).
+ *   3. Provider chain: Gemini first (free-tier models), platform-SDK
+ *      fallback last (see lib/echo/ai/llm — without a GEMINI_API_KEY the
+ *      chain ends in the designed ai_unavailable state).
  *
  * Guardrails: input clamps, prompt-injection resistance (all context is data),
  * output clamps, one JSON retry for the classifier, tiny per-IP rate limit.
@@ -131,7 +133,7 @@ function classifySystemPrompt(): string {
   return [
     "You are ECHO's intent router. ECHO is an entertainment discovery app (movies, series, anime, games, books) with a catalogue of real providers (AniList, Kitsu, TVMaze, IMDb, RAWG, Open Library). The user writes in Arabic or English.",
     "Classify the user's LAST message into exactly one intent:",
-    "- \"search\": they want to find, discover, or get works to watch/play/read/add — including vague recommendation asks («عايز حاجة أفرج عليها», «عايز لعبة زي The Witcher», \"what should I read\", «فيلم زي Parasite بس أهدأ»), or naming a work to find.",
+    "- \"search\": they want to find, discover, or get works to watch/play/read/add — including vague recommendation asks («عايز حاجة أفرج عليها», «عايز لعبة زي The Witcher", "what should I read", «فيلم زي Parasite بس أهدأ»), or naming a work to find.",
     "- \"library\": they ask about THEIR OWN library, map, taste, ratings or stats («مكتبتي», «ذوقي», «كام فيلم عندي», «أعلى تقييماتي»).",
     "- \"general\": cinema/anime/games/literature/entertainment knowledge, opinions, facts, industry, actors, directors, authors («مين مخرج Parasite؟», «إيه أهمية السينما الكورية؟»).",
     "If torn between search and general, choose search.",
