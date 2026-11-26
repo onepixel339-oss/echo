@@ -641,6 +641,15 @@ export const useEchoStore = create<EchoState>((set, get) => ({
       db.getAllFeedback(),
     ]);
     set({ media, entries, feedback });
+    // Replace mode is a full restore: the backed-up settings come back too
+    // (NF-1). Merge mode never touches settings — that is its contract.
+    if (mode === "replace" && parsed.data.settings) {
+      const restored = parsed.data.settings;
+      await get().updateSettings(restored);
+      if (restored.providerToggles) {
+        setProviderToggles(restored.providerToggles);
+      }
+    }
     return { ok: true, count };
   },
 }));
