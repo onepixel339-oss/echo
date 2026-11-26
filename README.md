@@ -171,11 +171,12 @@ bun run test       # domain unit tests (registry gate, migration, identity, expo
 
 Optional configuration: set `NEXT_PUBLIC_RAWG_API_KEY` to enable the games
 catalogue (no key ships in client code). Anime, series and books work out of
-the box via the enabled providers; inside this sandbox the AI features use
-the platform AI automatically. On an external
-deploy (e.g. Vercel) set `GEMINI_API_KEY` (free key:
-https://aistudio.google.com/apikey) to enable the AI features; see
-`.env.example` for every optional variable.
+the box via the enabled providers. **The AI features are off by default**
+(D-24, see `docs/AI_POSTURE.md`): on any external deploy (e.g. Vercel) set
+`GEMINI_API_KEY` (free key: https://aistudio.google.com/apikey) to enable
+them — without a key they return their designed `ai_unavailable` state and
+the rest of the app is unaffected; see `.env.example` for every optional
+variable.
 
 ## Tests
 
@@ -199,11 +200,13 @@ development.
 ## Known limitations
 
 - Games need a deployment-provided RAWG key (`NEXT_PUBLIC_RAWG_API_KEY`);
-  without it the games catalogue is gracefully unavailable. Commercial use
-  of RAWG data is pending terms confirmation.
-- On external deploys, the AI features (Ask ECHO, Taste Companion) need a
-  `GEMINI_API_KEY` env var; without it they degrade gracefully and the rest
-  of the app is unaffected.
+  without it the games catalogue is gracefully unavailable. RAWG's terms
+  permit free use (including commercial) under 100K monthly active users
+  with attribution (verified 2026-11-25, rawg.io/apidocs).
+- The AI features (Ask ECHO, Taste Companion, weekly digest) are **off by
+  default**: they need a `GEMINI_API_KEY` env var (bring-your-own free key);
+  without it they degrade gracefully to their labelled unavailability state
+  and the rest of the app is unaffected.
 - Cinemeta does not provide per-region certifications; movie maturity data is
   coarse (adult content is filtered, everything else shows as unrated).
 - Metadata refresh re-fetches by stored provider id after an online session;
