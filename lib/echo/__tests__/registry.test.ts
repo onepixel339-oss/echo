@@ -15,14 +15,17 @@ import { afterEach, describe, expect, test } from "bun:test";
 import {
   PROVIDER_REGISTRY,
   canPersistCatalogData,
+  cloudSyncPolicyFor,
   isProviderEnabled,
   isProviderUserToggleable,
   listProviderRegistry,
+  MANUAL_PROVIDER_ID,
   normalizeUserToggle,
   providerCacheTtlMs,
   providerEntry,
   refreshGateIdsForPrefix,
   setProviderToggles,
+  type CloudSyncPolicy,
 } from "../providers/registry";
 import { rawgKeyConfigured } from "../providers/rawg";
 
@@ -231,5 +234,79 @@ describe("RAWG embedded key removal", () => {
     expect(source).not.toContain("891771e3867e44fba54f16d4b411b1b3");
     // and no other hardcoded 32-hex token is present either
     expect(/["']([0-9a-f]{32})["']/.test(source)).toBe(false);
+  });
+});
+
+/* ------------- cloud-sync policy (Revision 1.3 §7.3.1, A0) --------------- */
+
+describe("cloudSyncPolicy — the four-level per-provider sync posture", () => {
+  test("every registry entry declares one of the four levels", () => {
+    const levels: CloudSyncPolicy[] = ["full", "reference", "pointer", "none"];
+    for (const entry of Object.values(PROVIDER_REGISTRY)) {
+      expect(levels).toContain(entry.cloudSyncPolicy);
+    }
+  });
+
+  test("full: permissive licenses, ECHO's own catalogue, user-authored records", () => {
+    for (const id of ["wikidata", "trakt", "bnf", "echo-demo"]) {
+      expect(cloudSyncPolicyFor(id)).toBe("full");
+    }
+    expect(cloudSyncPolicyFor(MANUAL_PROVIDER_ID)).toBe("full"); // the user's own data
+  });
+
+  test("reference: library references may sync, not full catalog payloads", () => {
+    for (const id of [
+      "rawg",
+      "igdb",
+      "openlib",
+      "tvmaze",
+      "imdb",
+      "cinemeta",
+      "madb",
+      "inventaire",
+    ]) {
+      expect(cloudSyncPolicyFor(id)).toBe("reference");
+    }
+  });
+
+  test("none: nothing AniList-derived is ever uploaded; kitsu is hard-disabled", () => {
+    expect(cloudSyncPolicyFor("anilist")).toBe("none");
+    expect(PROVIDER_REGISTRY.anilist.hardDisabled).toBe(false); // local use unchanged
+    expect(cloudSyncPolicyFor("kitsu")).toBe("none");
+    expect(PROVIDER_REGISTRY.kitsu.hardDisabled).toBe(true);
+  });
+
+  test("pointer is reserved vocabulary — assigned to NO provider today", () => {
+    const pointers = Object.values(PROVIDER_REGISTRY).filter(
+      (e) => e.cloudSyncPolicy === "pointer",
+    );
+    expect(pointers).toEqual([]); // the documented post-clarification candidate
+  });
+
+  test("unknown ids default-deny to none", () => {
+    expect(cloudSyncPolicyFor("tmdb")).toBe("none");
+    expect(cloudSyncPolicyFor("")).toBe("none");
+  });
+
+  test("AniList's local functionality is unchanged by the sync policy", () => {
+    // the policy governs cloud payloads only — the license gate still enables
+    // AniList for local search/details by default
+    expect(isProviderEnabled("anilist")).toBe(true);
+    expect(isProviderUserToggleable("anilist")).toBe(true);
+    expect(canPersistCatalogData("anilist")).toBe(false); // and its storage rules are unchanged
+  });
+
+  test("RAWG commercial use is permitted (verified 2026-11-25) with the date recorded", () => {
+    const rawg = providerEntry("rawg")!;
+    expect(rawg.commercialUse).toBe("permitted");
+    expect(rawg.lastVerified).toBe("2026-11-25");
+  });
+
+  test("the cloudSyncPolicy accessor reads the registry (single source of truth)", () => {
+    // the accessor and the entry always agree — the future Track B sync
+    // classifier reads this function, never a second table
+    for (const entry of Object.values(PROVIDER_REGISTRY)) {
+      expect(cloudSyncPolicyFor(entry.id)).toBe(entry.cloudSyncPolicy);
+    }
   });
 });
