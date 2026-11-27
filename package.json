@@ -1,6 +1,6 @@
 {
   "name": "echo",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "ECHO — Your taste, mapped. A local-first atlas of your media taste across anime, manga, movies, series, games, books and comics.",
   "scripts": {
@@ -11,7 +11,15 @@
     "start:standalone": "NODE_ENV=production bun .next/standalone/server.js",
     "lint": "eslint .",
     "test": "bun test lib/echo/__tests__",
-    "icons": "bun run scripts/generate-icons.ts"
+    "icons": "bun run scripts/generate-icons.ts",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "secret-scan": "bun scripts/secret-scan.ts",
+    "secret-scan:self-test": "bun scripts/secret-scan.ts --self-test",
+    "version-check": "bun scripts/version-check.ts",
+    "cost-table": "bun scripts/cost-table.ts",
+    "cost-table:check": "bun scripts/cost-table.ts --check",
+    "perf-baseline": "bun scripts/perf-baseline.ts"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -38,6 +46,7 @@
     "zustand": "^5.0.10"
   },
   "devDependencies": {
+    "@playwright/test": "1.57.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/react": "^19.2.8",
     "@types/react-dom": "^19.2.3",

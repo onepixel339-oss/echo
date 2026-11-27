@@ -31,7 +31,6 @@ const EN = ["English"];
 const FR = ["French"];
 const ES = ["Spanish"];
 const IT = ["Italian"];
-const FI = ["Finnish"];
 
 const USA = ["USA"];
 const UK = ["UK"];

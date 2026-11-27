@@ -18,7 +18,6 @@ import { CURATED_MANGA } from "../data/curatedManga";
 import { CURATED_COMICS } from "../data/curatedComics";
 import { DEMO_CATALOGUE } from "../data/demoCatalogue";
 import { MEDIA_TYPES } from "../types";
-import { isProviderEnabled } from "../providers/registry";
 import type { MediaItem } from "../types";
 
 function shardRecord(id: string, type: MediaItem["mediaType"], title: string): MediaItem {

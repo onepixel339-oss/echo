@@ -40,7 +40,7 @@ import {
 import { setProviderToggles } from "../providers/registry";
 import { searchCatalogue } from "../providers";
 import { buildMadbSparql, madbRowToItem } from "../providers/madb";
-import { buildBnfUrl, extractTagValues, parseBnfRecord } from "../providers/bnf";
+import { buildBnfUrl, parseBnfRecord } from "../providers/bnf";
 import { InventaireProvider } from "../providers/inventaire";
 import { normalizeTraktResults } from "../providers/trakt";
 import { normalizeIgdbResults } from "../providers/igdb";
@@ -288,7 +288,7 @@ describe("provider isolation, parallel search, timeouts", () => {
   });
 
   test("progressive updates fire as providers answer (slow never blocks fast)", async () => {
-    let anilistDelay = 40;
+    const anilistDelay = 40;
     responder = (url) => {
       if (url.includes("graphql.anilist.co")) {
         return new Promise((resolve) =>

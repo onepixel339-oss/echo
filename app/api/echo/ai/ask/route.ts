@@ -10,7 +10,9 @@
  *      client (real engine output, tiny payload).
  *      general → the LLM answers from its own entertainment knowledge; the
  *      client labels it as AI knowledge (no items).
- *   3. Provider chain: platform AI first, Gemini fallback (see lib/echo/ai/llm).
+ *   3. Provider chain: Gemini first (free-tier models), platform-SDK
+ *      fallback last (see lib/echo/ai/llm — without a GEMINI_API_KEY the
+ *      chain ends in the designed ai_unavailable state).
  *
  * Guardrails: input clamps, prompt-injection resistance (all context is data),
  * output clamps, one JSON retry for the classifier, tiny per-IP rate limit.

@@ -19,7 +19,6 @@ import "fake-indexeddb/auto";
 import { afterEach, describe, expect, test } from "bun:test";
 import { CURATED_MANGA } from "../data/curatedManga";
 import { CURATED_COMICS } from "../data/curatedComics";
-import { CURATED_BOOKS } from "../data/curatedBooks";
 import { DEMO_CATALOGUE, demoToMediaItem } from "../data/demoCatalogue";
 import {
   CURATED_LINKS,

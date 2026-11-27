@@ -79,7 +79,6 @@ export function computeLayout(
   const clusterOf = new Map<string, number>();
   clusters.forEach((c, ci) => c.members.forEach((m) => clusterOf.set(m, ci)));
   let singletonCounter = clusters.length;
-  const indexOf = new Map(sorted.map((m, i) => [m.localId, i]));
 
   // ---- nodes ----
   const nodes: Node[] = sorted.map((item) => {

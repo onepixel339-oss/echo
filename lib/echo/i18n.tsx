@@ -11,7 +11,6 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useState,
 } from "react";
 import { vocabLabel } from "./data/vocab";
 import type { Language } from "./types";
@@ -1124,6 +1123,14 @@ const AR: Dict = {
 };
 
 const DICTS: Record<Language, Dict> = { en: EN, ar: AR };
+
+/** Key sets per language, exported for the EN↔AR parity gate
+ *  (`lib/echo/__tests__/i18nparity.test.ts`) — the test asserts both
+ *  interfaces expose exactly the same keys. */
+export const I18N_KEY_SETS: Record<Language, ReadonlySet<string>> = {
+  en: new Set(Object.keys(EN)),
+  ar: new Set(Object.keys(AR)),
+};
 
 /**
  * Standalone translator for a SPECIFIC language (independent of the active

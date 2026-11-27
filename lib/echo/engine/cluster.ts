@@ -30,7 +30,7 @@ export function computeClusters(items: MediaItem[], edges: SimEdge[]): Cluster[]
   }
 
   // deterministic label propagation
-  let labels = ids.map((_, i) => i);
+  const labels = ids.map((_, i) => i);
   const order = ids
     .map((_, i) => i)
     .sort((a, b) => degree(adj[a]) - degree(adj[b]) || a - b); // low degree first (stable)

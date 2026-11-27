@@ -18,7 +18,7 @@
  *   - ambiguous many-to-many title matches — ambiguity stays separate.
  */
 
-import type { MediaItem, MediaType } from "../types";
+import type { MediaItem } from "../types";
 import type { FederatedHit, MergeConfidence, ResultContribution } from "./types";
 
 /** Normalize a title for comparison: lowercase, letters+numbers only (unicode). */

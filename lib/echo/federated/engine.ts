@@ -416,7 +416,9 @@ export function createFederatedSearch(
 }
 
 function jobKey(job: ResolvedProviderJob): string {
-  return `${job.registryId}:${job.provider.id}`;
+  // a job may override its identity when one provider serves the same
+  // categories through multiple jobs (AniList anime + manga) — see router.ts
+  return job.key ?? `${job.registryId}:${job.provider.id}`;
 }
 
 /** Awaitable form without progressive updates (server routes, tests). */

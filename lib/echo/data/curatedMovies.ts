@@ -51,7 +51,6 @@ const BRA = ["Brazil"];
 const IRN = ["Iran"];
 const MEX = ["Mexico"];
 const LBN = ["Lebanon"];
-const NZL = ["New Zealand"];
 const SUN = ["USSR"];
 
 const CURATED_ATTRIBUTION = "ECHO curated sample collection — original descriptions";

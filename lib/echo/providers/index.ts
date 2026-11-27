@@ -34,7 +34,7 @@ import {
   openLibraryTrending,
   openLibraryArabicShelf,
 } from "./openlibrary";
-import { searchCatalogShards, shardPoolForTypes } from "../catalogShards";
+import { shardPoolForTypes } from "../catalogShards";
 import type { CatalogueProvider, ProviderSearchResult, SearchFilters } from "./types";
 import { genreDisplay } from "./types";
 import type { ContentVisibility, MediaItem, MediaType } from "../types";

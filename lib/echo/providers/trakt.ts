@@ -19,7 +19,7 @@
  * per IP (server/ratelimit.ts) so one browser cannot burn the quota.
  */
 
-import type { MediaFormat, MediaItem, MediaType } from "../types";
+import type { MediaFormat, MediaItem } from "../types";
 import { formatForType } from "../types";
 import {
   ProviderError,

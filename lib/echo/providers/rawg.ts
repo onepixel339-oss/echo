@@ -9,8 +9,10 @@
  *     variable is public-by-design; private credentials are never used here.
  *   - Without a configured key the provider reports "not configured" and
  *     games search/pools degrade gracefully (no silent substitution).
- *   - Commercial use of RAWG data remains OFF until its applicable terms
- *     are confirmed (see docs/DATA_PROVIDER_COMPLIANCE.md).
+ *   - Commercial use of RAWG data is permitted by RAWG's terms for free
+ *     products under 100K monthly active users with attribution (verified
+ *     2026-11-25, rawg.io/apidocs; recorded in docs/DATA_PROVIDER_COMPLIANCE.md
+ *     and the provider registry).
  *
  * Endpoints used:
  *  - search   /games?search=…            (name, year, poster, genres)
@@ -29,20 +31,25 @@ import {
   type SearchFilters,
 } from "./types";
 import { cached, TTLCache } from "./cache";
+import { stampCatalogProvenance } from "./provenance";
 import type { ContentVisibility } from "../types";
 
 const RAWG = "https://api.rawg.io/api";
 
 /**
- * API key — environment-provided ONLY. Nothing is baked in: exposing a
- * shared/borrowed key in client code is forbidden by the provider policy.
- * NEXT_PUBLIC_RAWG_API_KEY is public-by-design (a deployment's own key);
- * private credentials are never read here.
+ * API key — environment-provided ONLY, read lazily per call (so tests and
+ * the server runtime observe env changes instead of a frozen module
+ * constant). Nothing is baked in: exposing a shared/borrowed key in client
+ * code is forbidden by the provider policy. NEXT_PUBLIC_RAWG_API_KEY is
+ * public-by-design (a deployment's own key); private credentials are never
+ * read here.
  */
-const rawgKey = (process.env.NEXT_PUBLIC_RAWG_API_KEY ?? "").trim();
+export function rawgApiKey(): string {
+  return (process.env.NEXT_PUBLIC_RAWG_API_KEY ?? "").trim();
+}
 
 export function rawgKeyConfigured(): boolean {
-  return rawgKey.length > 0;
+  return rawgApiKey().length > 0;
 }
 
 interface RawgRef {
@@ -115,7 +122,7 @@ function gameTags(g: RawgGame): string[] {
 function toMediaItem(g: RawgGame, withDetail?: Partial<RawgGame>): MediaItem {
   const merged = { ...g, ...withDetail };
   const communityRating = merged.rating ?? null;
-  return {
+  return stampCatalogProvenance({
     localId: `rawg:${g.id}`,
     provider: "rawg",
     providerId: String(g.id),
@@ -150,12 +157,13 @@ function toMediaItem(g: RawgGame, withDetail?: Partial<RawgGame>): MediaItem {
     backdropUrl: g.background_image ?? undefined,
     sourceAttribution: "Data from RAWG",
     metadataFetchedAt: new Date().toISOString(),
-  };
+  });
 }
 
 function requireKey(): string {
-  if (!rawgKey) throw new ProviderError("missing_key");
-  return rawgKey;
+  const key = rawgApiKey();
+  if (!key) throw new ProviderError("missing_key");
+  return key;
 }
 
 function rawgUrl(path: string, params: Record<string, string | number | undefined>): string {
@@ -277,7 +285,7 @@ export class RawgProvider implements CatalogueProvider {
     return {
       name: "RAWG",
       notice:
-        "Games data from RAWG (rawg.io). Requires a RAWG API key provided by the deployment (NEXT_PUBLIC_RAWG_API_KEY) — no key ships with the app. Commercial use pending terms confirmation.",
+        "Games data from RAWG (rawg.io). Requires a RAWG API key provided by the deployment (NEXT_PUBLIC_RAWG_API_KEY) — no key ships with the app. Free with attribution under 100K monthly active users (rawg.io/apidocs).",
       canonical: "https://rawg.io/",
     };
   }

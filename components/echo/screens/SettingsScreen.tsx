@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-const APP_VERSION = "1.0.0-mvp";
+const APP_VERSION = "1.1.0";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -108,6 +108,11 @@ export function SettingsScreen() {
         recencyWeight: state.settings.recencyWeight,
         mapLabels: state.settings.mapLabels,
         animations: state.settings.animations,
+        // v3 fields (NF-1): a full backup must carry these too — without
+        // them a replace-mode restore silently lost the visibility level
+        // and the provider toggles.
+        contentVisibility: state.settings.contentVisibility,
+        providerToggles: state.settings.providerToggles,
       },
       media: state.media,
       entries: state.entries,
